@@ -485,30 +485,35 @@ export default function Studio() {
     Array.from(e.dataTransfer.files).forEach(processImageFile)
   }
 
-  // Helper: get the full HTML string for the active design
-  async function getActiveHtml(): Promise<string> {
-    if (active!.html) return active!.html
-    const res = await fetch(active!.src!)
-    return res.text()
+  // Helper: trigger a file download from a URL or data-URL
+  function triggerDownload(href: string, filename: string, revoke = false) {
+    const a = document.createElement("a")
+    a.href = href
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    if (revoke) setTimeout(() => URL.revokeObjectURL(href), 2000)
   }
 
   async function exportPng() {
     if (!active || exporting || (!active.html && !active.src)) return
     setExporting("png")
     try {
-      const html = await getActiveHtml()
-      const res = await fetch("/api/export", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html, mode: "png" }),
+      const iframe = iframeRef.current
+      if (!iframe?.contentDocument?.body) throw new Error("iframe not ready")
+      const { default: html2canvas } = await import("html2canvas")
+      const canvas = await html2canvas(iframe.contentDocument.body, {
+        width: 1080,
+        height: 1920,
+        windowWidth: 1080,
+        windowHeight: 1920,
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
       })
-      if (!res.ok) throw new Error(await res.text())
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.download = `${active.title.slice(0, 40)}.png`
-      a.href = url; a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      triggerDownload(canvas.toDataURL("image/png"), `${active.title.slice(0, 40)}.png`)
     } catch (e) { console.error("PNG export:", e) }
     finally { setExporting(null) }
   }
@@ -516,51 +521,54 @@ export default function Studio() {
   async function exportMp4() {
     if (!active || exporting || (!active.html && !active.src)) return
     setExporting("mp4")
-    setExportProgress(10) // show activity while server renders
+    setExportProgress(5)
     try {
-      const html = await getActiveHtml()
-      const res = await fetch("/api/export", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html, mode: "frames", duration: 6000, fps: 5 }),
-      })
-      if (!res.ok) throw new Error(await res.text())
-      const { frames, fps: serverFps } = await res.json() as { frames: string[], fps: number }
+      const iframe = iframeRef.current
+      if (!iframe?.contentDocument?.body) throw new Error("iframe not ready")
+      const { default: html2canvas } = await import("html2canvas")
 
-      setExportProgress(50) // frames received, now encode
+      const fps = 3
+      const durationMs = 5000
+      const frameCount = Math.floor((durationMs / 1000) * fps) // 15 frames
 
-      // Draw server frames onto a canvas and record with MediaRecorder
       const recCanvas = document.createElement("canvas")
       recCanvas.width = 1080; recCanvas.height = 1920
       const ctx = recCanvas.getContext("2d")!
       const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
         ? "video/webm;codecs=vp9" : "video/webm"
-      const stream = recCanvas.captureStream(serverFps)
+      const stream = recCanvas.captureStream(fps)
       const recorder = new MediaRecorder(stream, { mimeType })
       const chunks: Blob[] = []
       recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
 
+      const title = active.title
       const done = new Promise<void>(resolve => {
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: mimeType })
           const url = URL.createObjectURL(blob)
-          const a = document.createElement("a")
-          a.download = `${active.title.slice(0, 40)}.mp4`
-          a.href = url; a.click()
-          setTimeout(() => URL.revokeObjectURL(url), 2000)
+          triggerDownload(url, `${title.slice(0, 40)}.webm`, true)
           resolve()
         }
       })
 
       recorder.start()
-      for (let i = 0; i < frames.length; i++) {
-        await new Promise<void>(resolve => {
-          const img = new Image()
-          img.onload = () => { ctx.drawImage(img, 0, 0); resolve() }
-          img.src = `data:image/jpeg;base64,${frames[i]}`
-        })
-        setExportProgress(50 + Math.round(((i + 1) / frames.length) * 50))
-        await new Promise(r => setTimeout(r, 1000 / serverFps))
+      for (let i = 0; i < frameCount; i++) {
+        const body = iframe.contentDocument?.body
+        if (body) {
+          const frame = await html2canvas(body, {
+            width: 1080,
+            height: 1920,
+            windowWidth: 1080,
+            windowHeight: 1920,
+            scale: 1,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+          })
+          ctx.drawImage(frame, 0, 0)
+        }
+        setExportProgress(5 + Math.round(((i + 1) / frameCount) * 90))
+        await new Promise(r => setTimeout(r, 1000 / fps))
       }
       recorder.stop()
       await done
@@ -675,7 +683,7 @@ export default function Studio() {
         <button
           onClick={exportMp4}
           disabled={!active || exporting !== null || (!active.html && !active.src)}
-          title="MP4 olarak indir (8 sn)"
+          title="Video olarak indir (WebM)"
           style={{ ...S.btnSolid, opacity: (!active || exporting !== null || (!active?.html && !active?.src)) ? 0.4 : 1, position: "relative", overflow: "hidden" }}
         >
           {exporting === "mp4" && (
@@ -686,7 +694,7 @@ export default function Studio() {
           ) : (
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><polygon points="23 7 16 12 23 17 23 7" fill="currentColor"/><rect x="1" y="5" width="15" height="14" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/></svg>
           )}
-          {exporting === "mp4" ? `${exportProgress}%` : "MP4"}
+          {exporting === "mp4" ? `${exportProgress}%` : "WebM"}
         </button>
       </div>
 
