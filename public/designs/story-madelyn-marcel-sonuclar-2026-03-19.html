@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=1080"/>
+<title>Madelyn Marcel × WhatTalk.ai</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,700&display=swap');
+
+:root {
+  --black:       #0A0A0A;
+  --teal:        #00C2A8;
+  --teal-dim:    rgba(0,194,168,.14);
+  --teal-glow:   rgba(0,194,168,.28);
+  --teal-line:   rgba(0,194,168,.5);
+  --purple:      #7855FF;
+  --purple-dim:  rgba(120,85,255,.18);
+  --white:       #FFFFFF;
+  --white-60:    rgba(255,255,255,.6);
+  --white-30:    rgba(255,255,255,.3);
+  --white-10:    rgba(255,255,255,.08);
+  --card:        #111111;
+  --card-border: rgba(255,255,255,.08);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background: var(--black);
+  font-family: 'DM Sans', sans-serif;
+  color: var(--white);
+}
+
+/* ─── NOISE ─────────────────────────── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 1;
+  pointer-events: none;
+  opacity: .032;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px;
+}
+
+/* ─── WAVE BACKGROUND ────────────────── */
+.waves {
+  position: absolute;
+  top: 0; left: 0;
+  width: 1080px;
+  height: 860px;
+  overflow: hidden;
+  z-index: 0;
+}
+.waves svg { width: 100%; height: 100%; }
+
+/* ─── GLOW BLOBS ─────────────────────── */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.blob-teal {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(0,194,168,.11) 0%, transparent 65%);
+  bottom: 300px; right: -180px;
+  filter: blur(40px);
+  animation: drift 14s ease-in-out infinite alternate;
+}
+.blob-purple {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(120,85,255,.13) 0%, transparent 65%);
+  top: 200px; left: -160px;
+  filter: blur(60px);
+  animation: drift 18s ease-in-out infinite alternate-reverse;
+}
+@keyframes drift {
+  from { transform: translate(0,0) scale(1); }
+  to   { transform: translate(30px,20px) scale(1.06); }
+}
+
+/* ─── LAYOUT ────────────────────────── */
+.canvas {
+  position: relative;
+  z-index: 2;
+  width: 1080px;
+  height: 1920px;
+  display: flex;
+  flex-direction: column;
+  padding: 72px 72px 64px;
+}
+
+/* ─── LOGO ──────────────────────────── */
+.logo-wrap {
+  width: 340px;
+  margin-bottom: 44px;
+  animation: fadeUp .5s ease both;
+}
+.logo-wrap svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ─── BADGE ─────────────────────────── */
+.badge {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 26px;
+  border: 1px solid rgba(120,85,255,.5);
+  background: rgba(120,85,255,.12);
+  border-radius: 40px;
+  margin-bottom: 52px;
+  animation: fadeUp .55s .05s ease both;
+}
+.badge-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--purple);
+  box-shadow: 0 0 10px var(--purple);
+  animation: blink 2.6s ease-in-out infinite;
+}
+@keyframes blink {
+  0%,100% { opacity:1; box-shadow: 0 0 10px var(--purple); }
+  50%      { opacity:.35; box-shadow: 0 0 4px var(--purple); }
+}
+.badge-text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.85);
+}
+
+/* ─── HEADLINE ───────────────────────── */
+.headline-block {
+  margin-bottom: 52px;
+  animation: fadeUp .6s .1s ease both;
+}
+.headline-eyebrow {
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--white-60);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.headline {
+  font-family: 'Syne', sans-serif;
+  font-size: 82px;
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -.025em;
+  color: var(--white);
+}
+.headline .purple {
+  font-family: 'DM Sans', sans-serif;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--purple);
+  font-size: 78px;
+}
+.headline-sub {
+  margin-top: 22px;
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--white-60);
+  letter-spacing: .01em;
+}
+
+/* ─── DIVIDER ────────────────────────── */
+.divider {
+  width: 72px; height: 2px;
+  background: linear-gradient(90deg, var(--teal), transparent);
+  margin-bottom: 52px;
+  animation: growX .7s .25s ease both;
+  transform-origin: left;
+}
+@keyframes growX {
+  from { transform: scaleX(0); opacity:0; }
+  to   { transform: scaleX(1); opacity:1; }
+}
+
+/* ─── KPI ROW ────────────────────────── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 20px;
+}
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 38px 28px 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, var(--teal) 0%, transparent 80%);
+}
+.kpi-card:nth-child(1) { animation: fadeUp .55s .3s ease both; }
+.kpi-card:nth-child(2) { animation: fadeUp .55s .38s ease both; }
+.kpi-card:nth-child(3) { animation: fadeUp .55s .46s ease both; }
+
+.kpi-icon {
+  width: 40px; height: 40px;
+  background: var(--teal-dim);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 18px;
+}
+.kpi-icon svg { width: 20px; height: 20px; stroke: var(--teal); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.kpi-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 68px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.03em;
+  color: var(--white);
+}
+.kpi-num.accent { color: var(--teal); }
+.kpi-label {
+  margin-top: 9px;
+  font-size: 21px;
+  font-weight: 400;
+  color: var(--white-60);
+  line-height: 1.35;
+}
+
+/* ─── FUNNEL CARD ────────────────────── */
+.funnel-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 42px 44px 44px;
+  margin-bottom: 20px;
+  animation: fadeUp .55s .54s ease both;
+}
+.funnel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+.funnel-header-icon {
+  width: 28px; height: 28px;
+  background: var(--teal-dim);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.funnel-header-icon svg { width: 14px; height: 14px; stroke: var(--teal); fill: none; stroke-width: 2; stroke-linecap: round; }
+.funnel-title {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+
+.funnel-row {
+  display: flex;
+  align-items: center;
+}
+.funnel-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.f-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.025em;
+  color: var(--white);
+}
+.f-num.accent { color: var(--teal); }
+.f-label {
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--white-60);
+  text-align: center;
+}
+.f-arrow {
+  flex-shrink: 0;
+  padding: 0 4px;
+  padding-bottom: 24px;
+}
+.f-arrow svg { width: 22px; height: 22px; stroke: rgba(0,194,168,.5); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Progress bars */
+.funnel-bars {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+  height: 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255,255,255,.06);
+}
+.f-seg {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--teal);
+  animation: growX 1s ease both;
+}
+.f-seg-1 { flex: 2286; opacity: .2; animation-delay: .9s; }
+.f-seg-2 { flex: 1732; opacity: .45; animation-delay: 1.05s; }
+.f-seg-3 { flex:  438; opacity: .72; animation-delay: 1.2s; }
+.f-seg-4 { flex:  137; opacity: 1; animation-delay: 1.35s; box-shadow: 0 0 12px var(--teal); }
+
+/* ─── QUOTE ──────────────────────────── */
+.quote-card {
+  background: linear-gradient(135deg, rgba(0,194,168,.1), rgba(0,194,168,.05));
+  border: 1px solid rgba(0,194,168,.22);
+  border-radius: 20px;
+  padding: 42px 48px;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp .55s .62s ease both;
+}
+.quote-card::before {
+  content: '"';
+  position: absolute;
+  top: -28px; left: 28px;
+  font-family: 'Syne', sans-serif;
+  font-size: 220px;
+  font-weight: 800;
+  color: var(--teal);
+  opacity: .06;
+  line-height: 1;
+  pointer-events: none;
+}
+.quote-text {
+  font-family: 'Syne', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--white);
+  position: relative;
+  z-index: 1;
+}
+.quote-text em {
+  font-style: normal;
+  color: var(--teal);
+}
+
+/* ─── FOOTER ─────────────────────────── */
+.footer {
+  margin-top: auto;
+  padding-top: 36px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: fadeUp .55s .7s ease both;
+}
+.footer-logo {
+  width: 200px;
+  opacity: .7;
+}
+.footer-logo svg { width: 100%; height: auto; }
+.footer-right {
+  text-align: right;
+}
+.footer-agent {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--teal);
+  letter-spacing: .04em;
+}
+.footer-tagline {
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--white-30);
+  max-width: 340px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+/* ─── SHARED ANIM ────────────────────── */
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(22px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<!-- Wave background -->
+<div class="waves">
+  <svg viewBox="0 0 1080 860" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <defs>
+      <radialGradient id="rg1" cx="50%" cy="0%" r="80%">
+        <stop offset="0%" stop-color="#7855FF" stop-opacity=".18"/>
+        <stop offset="100%" stop-color="#0A0A0A" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1080" height="860" fill="url(#rg1)"/>
+    <!-- Wave lines mimicking the website -->
+    <g fill="none" stroke="#7855FF" stroke-opacity=".07" stroke-width="1.2">
+      <path d="M-100 760 Q 160 660 360 720 Q 560 780 760 680 Q 960 580 1180 660"/>
+      <path d="M-100 720 Q 160 620 360 680 Q 560 740 760 640 Q 960 540 1180 620"/>
+      <path d="M-100 680 Q 160 580 360 640 Q 560 700 760 600 Q 960 500 1180 580"/>
+      <path d="M-100 640 Q 160 540 360 600 Q 560 660 760 560 Q 960 460 1180 540"/>
+      <path d="M-100 600 Q 160 500 360 560 Q 560 620 760 520 Q 960 420 1180 500"/>
+      <path d="M-100 560 Q 160 460 360 520 Q 560 580 760 480 Q 960 380 1180 460"/>
+      <path d="M-100 520 Q 160 420 360 480 Q 560 540 760 440 Q 960 340 1180 420"/>
+      <path d="M-100 480 Q 160 380 360 440 Q 560 500 760 400 Q 960 300 1180 380"/>
+      <path d="M-100 440 Q 160 340 360 400 Q 560 460 760 360 Q 960 260 1180 340"/>
+      <path d="M-100 400 Q 160 300 360 360 Q 560 420 760 320 Q 960 220 1180 300"/>
+      <path d="M-100 360 Q 160 260 360 320 Q 560 380 760 280 Q 960 180 1180 260"/>
+      <path d="M-100 320 Q 160 220 360 280 Q 560 340 760 240 Q 960 140 1180 220"/>
+      <path d="M-100 280 Q 160 180 360 240 Q 560 300 760 200 Q 960 100 1180 180"/>
+      <path d="M-100 240 Q 160 140 360 200 Q 560 260 760 160 Q 960  60 1180 140"/>
+      <path d="M-100 200 Q 160 100 360 160 Q 560 220 760 120 Q 960  20 1180 100"/>
+      <path d="M-100 160 Q 160  60 360 120 Q 560 180 760  80 Q 960 -20 1180  60"/>
+    </g>
+    <!-- Stronger accent waves -->
+    <g fill="none" stroke="#7855FF" stroke-opacity=".15" stroke-width="1.5">
+      <path d="M-100 700 Q 200 580 420 660 Q 640 740 860 620 Q 1040 520 1180 580"/>
+      <path d="M-100 560 Q 200 440 420 520 Q 640 600 860 480 Q 1040 380 1180 440"/>
+      <path d="M-100 420 Q 200 300 420 380 Q 640 460 860 340 Q 1040 240 1180 300"/>
+    </g>
+  </svg>
+</div>
+
+<!-- Ambient glow blobs -->
+<div class="blob blob-purple"></div>
+<div class="blob blob-teal"></div>
+
+<!-- Main canvas -->
+<div class="canvas">
+
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1497 441" preserveAspectRatio="xMidYMid meet">
+      <defs><clipPath id="clip1"><rect x="0" width="1062" y="0" height="291"/></clipPath></defs>
+      <path fill="#ffffff" d="M 199.5 407.5625 C 96.085938 407.5625 12.46875 323.945312 12.46875 220.53125 C 12.46875 117.117188 96.085938 33.5 199.5 33.5 C 302.914062 33.5 386.53125 117.117188 386.53125 220.53125 C 386.53125 323.945312 302.914062 407.5625 199.5 407.5625 Z"/>
+      <path stroke-linecap="round" transform="matrix(0.779297,0,0,0.779297,0.0000186701,21.031106)" fill="none" stroke-linejoin="round" d="M 155.999997 292.000223 C 206.000003 350.00023 306.000016 350.00023 356.000023 292.000223" stroke="#000000" stroke-width="40" stroke-opacity="1" stroke-miterlimit="4"/>
+      <g transform="matrix(1,0,0,1,435,75)"><g clip-path="url(#clip1)">
+        <g fill="#ffffff" fill-opacity="1"><g transform="translate(1.057548,226.525283)"><g><path d="M 50.597656 0 L 88.246094 0 L 119.664062 -110.789062 L 151.316406 0 L 188.964844 0 L 235.96875 -167.863281 L 201.195312 -167.863281 L 169.0625 -43.40625 L 133.8125 -167.863281 L 105.515625 -167.863281 L 70.503906 -43.40625 L 38.367188 -167.863281 L 3.597656 -167.863281 Z"/></g></g></g>
+        <g fill="#ffffff" fill-opacity="1"><g transform="translate(235.82524,226.525283)"><g><path d="M 80.8125 -123.257812 C 64.746094 -123.257812 52.277344 -117.265625 45.082031 -106.472656 L 45.082031 -167.863281 L 14.148438 -167.863281 L 14.148438 0 L 45.082031 0 L 45.082031 -64.746094 C 45.082031 -85.609375 56.355469 -94.484375 71.460938 -94.484375 C 85.371094 -94.484375 95.203125 -86.089844 95.203125 -69.78125 L 95.203125 0 L 126.136719 0 L 126.136719 -73.621094 C 126.136719 -105.515625 106.234375 -123.257812 80.8125 -123.257812 Z"/></g></g></g>
+        <g fill="#ffffff" fill-opacity="1"><g transform="translate(374.191867,226.525283)"><g><path d="M 105.273438 -119.902344 L 105.273438 -105.753906 C 96.640625 -116.542969 83.691406 -123.257812 66.1875 -123.257812 C 34.292969 -123.257812 7.914062 -95.683594 7.914062 -59.949219 C 7.914062 -24.21875 34.292969 3.355469 66.1875 3.355469 C 83.691406 3.355469 96.640625 -3.355469 105.273438 -14.148438 L 105.273438 0 L 136.207031 0 L 136.207031 -119.902344 Z M 71.941406 -26.136719 C 52.996094 -26.136719 38.847656 -39.808594 38.847656 -59.949219 C 38.847656 -80.09375 52.996094 -93.761719 71.941406 -93.761719 C 91.125 -93.761719 105.273438 -80.09375 105.273438 -59.949219 C 105.273438 -39.808594 91.125 -26.136719 71.941406 -26.136719 Z"/></g></g></g>
+        <g fill="#ffffff" fill-opacity="1"><g transform="translate(524.30888,226.525283)"><g><path d="M 82.730469 -90.167969 L 82.730469 -119.902344 L 55.632812 -119.902344 L 55.632812 -153.472656 L 24.699219 -144.121094 L 24.699219 -119.902344 L 3.835938 -119.902344 L 3.835938 -90.167969 L 24.699219 -90.167969 L 24.699219 -40.285156 C 24.699219 -7.914062 39.328125 4.796875 82.730469 0 L 82.730469 -28.058594 C 64.988281 -27.097656 55.632812 -27.335938 55.632812 -40.285156 L 55.632812 -90.167969 Z"/></g></g></g>
+        <g fill="#ffffff" fill-opacity="1"><g transform="translate(616.633208,226.525283)"><g><path d="M 126.617188 -167.863281 L 3.117188 -167.863281 L 3.117188 -136.207031 L 48.199219 -136.207031 L 48.199219 0 L 81.292969 0 L 81.292969 -136.207031 L 126.617188 -136.207031 Z"/></g></g></g>
+        <g fill="#ffffff" fill-opacity="1"><g transform="translate(724.304968,226.525283)"><g><path d="M 105.273438 -119.902344 L 105.273438 -105.753906 C 96.640625 -116.542969 83.691406 -123.257812 66.1875 -123.257812 C 34.292969 -123.257812 7.914062 -95.683594 7.914062 -59.949219 C 7.914062 -24.21875 34.292969 3.355469 66.1875 3.355469 C 83.691406 3.355469 96.640625 -3.355469 105.273438 -14.148438 L 105.273438 0 L 136.207031 0 L 136.207031 -119.902344 Z M 71.941406 -26.136719 C 52.996094 -26.136719 38.847656 -39.808594 38.847656 -59.949219 C 38.847656 -80.09375 52.996094 -93.761719 71.941406 -93.761719 C 91.125 -93.761719 105.273438 -80.09375 105.273438 -59.949219 C 105.273438 -39.808594 91.125 -26.136719 71.941406 -26.136719 Z"/></g></g></g>
+        <g fill="#ffffff" fill-opacity="1"><g transform="translate(874.422026,226.525283)"><g><path d="M 14.148438 0 L 45.082031 0 L 45.082031 -175.058594 L 14.148438 -175.058594 Z"/></g></g></g>
+        <g fill="#ffffff" fill-opacity="1"><g transform="translate(933.653474,226.525283)"><g><path d="M 124.699219 0 L 75.058594 -60.671875 L 123.257812 -119.902344 L 86.328125 -119.902344 L 45.082031 -67.144531 L 45.082031 -167.863281 L 14.148438 -167.863281 L 14.148438 0 L 45.082031 0 L 45.082031 -54.433594 L 88.726562 0 Z"/></g></g></g>
+      </g></g>
+    </svg>
+  </div>
+
+  <!-- Badge -->
+  <div class="badge">
+    <div class="badge-dot"></div>
+    <span class="badge-text">Gerçek Müşteri &nbsp;·&nbsp; Gerçek Sonuç</span>
+  </div>
+
+  <!-- Headline -->
+  <div class="headline-block">
+    <div class="headline-eyebrow">Vaka Çalışması</div>
+    <div class="headline">
+      Madelyn Marcel<br>
+      Güzellik Merkezi<br>
+      <span class="purple">Elif ile</span>
+    </div>
+    <div class="headline-sub">İlk AI kampanya sonuçları</div>
+  </div>
+
+  <!-- Divider -->
+  <div class="divider"></div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-icon">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="kpi-num c1">137</div>
+      <div class="kpi-label">Referans<br>Gönderen</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">
+        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      </div>
+      <div class="kpi-num accent c2">445</div>
+      <div class="kpi-label">Toplam Yeni<br>Referans</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <div class="kpi-num c3">3.2</div>
+      <div class="kpi-label">Kişi Başı<br>Referans</div>
+    </div>
+  </div>
+
+  <!-- Funnel -->
+  <div class="funnel-card">
+    <div class="funnel-header">
+      <div class="funnel-header-icon">
+        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      </div>
+      <div class="funnel-title">Performans İstatistikleri</div>
+    </div>
+
+    <div class="funnel-row">
+      <div class="funnel-step">
+        <div class="f-num fn1">2.286</div>
+        <div class="f-label">Aranan</div>
+      </div>
+      <div class="f-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="funnel-step">
+        <div class="f-num fn2">1.732</div>
+        <div class="f-label">Ulaşılan</div>
+      </div>
+      <div class="f-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="funnel-step">
+        <div class="f-num fn3">438</div>
+        <div class="f-label">Katılan</div>
+      </div>
+      <div class="f-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="funnel-step">
+        <div class="f-num accent fn4">137</div>
+        <div class="f-label">Gönderen</div>
+      </div>
+    </div>
+
+    <div class="funnel-bars">
+      <div class="f-seg f-seg-1"></div>
+      <div class="f-seg f-seg-2"></div>
+      <div class="f-seg f-seg-3"></div>
+      <div class="f-seg f-seg-4"></div>
+    </div>
+  </div>
+
+  <!-- Quote -->
+  <div class="quote-card">
+    <div class="quote-text">
+      137 müşteri, ortalama <em>3.2 arkadaşını</em> tavsiye etti —
+      <em>445 yeni isim</em>, hepsi kayıt altında.
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1497 441" preserveAspectRatio="xMidYMid meet">
+        <defs><clipPath id="clip2"><rect x="0" width="1062" y="0" height="291"/></clipPath></defs>
+        <path fill="#ffffff" d="M 199.5 407.5625 C 96.085938 407.5625 12.46875 323.945312 12.46875 220.53125 C 12.46875 117.117188 96.085938 33.5 199.5 33.5 C 302.914062 33.5 386.53125 117.117188 386.53125 220.53125 C 386.53125 323.945312 302.914062 407.5625 199.5 407.5625 Z"/>
+        <path stroke-linecap="round" transform="matrix(0.779297,0,0,0.779297,0.0000186701,21.031106)" fill="none" stroke-linejoin="round" d="M 155.999997 292.000223 C 206.000003 350.00023 306.000016 350.00023 356.000023 292.000223" stroke="#000000" stroke-width="40" stroke-opacity="1" stroke-miterlimit="4"/>
+        <g transform="matrix(1,0,0,1,435,75)"><g clip-path="url(#clip2)">
+          <g fill="#ffffff" fill-opacity="1"><g transform="translate(1.057548,226.525283)"><g><path d="M 50.597656 0 L 88.246094 0 L 119.664062 -110.789062 L 151.316406 0 L 188.964844 0 L 235.96875 -167.863281 L 201.195312 -167.863281 L 169.0625 -43.40625 L 133.8125 -167.863281 L 105.515625 -167.863281 L 70.503906 -43.40625 L 38.367188 -167.863281 L 3.597656 -167.863281 Z"/></g></g></g>
+          <g fill="#ffffff" fill-opacity="1"><g transform="translate(235.82524,226.525283)"><g><path d="M 80.8125 -123.257812 C 64.746094 -123.257812 52.277344 -117.265625 45.082031 -106.472656 L 45.082031 -167.863281 L 14.148438 -167.863281 L 14.148438 0 L 45.082031 0 L 45.082031 -64.746094 C 45.082031 -85.609375 56.355469 -94.484375 71.460938 -94.484375 C 85.371094 -94.484375 95.203125 -86.089844 95.203125 -69.78125 L 95.203125 0 L 126.136719 0 L 126.136719 -73.621094 C 126.136719 -105.515625 106.234375 -123.257812 80.8125 -123.257812 Z"/></g></g></g>
+          <g fill="#ffffff" fill-opacity="1"><g transform="translate(374.191867,226.525283)"><g><path d="M 105.273438 -119.902344 L 105.273438 -105.753906 C 96.640625 -116.542969 83.691406 -123.257812 66.1875 -123.257812 C 34.292969 -123.257812 7.914062 -95.683594 7.914062 -59.949219 C 7.914062 -24.21875 34.292969 3.355469 66.1875 3.355469 C 83.691406 3.355469 96.640625 -3.355469 105.273438 -14.148438 L 105.273438 0 L 136.207031 0 L 136.207031 -119.902344 Z M 71.941406 -26.136719 C 52.996094 -26.136719 38.847656 -39.808594 38.847656 -59.949219 C 38.847656 -80.09375 52.996094 -93.761719 71.941406 -93.761719 C 91.125 -93.761719 105.273438 -80.09375 105.273438 -59.949219 C 105.273438 -39.808594 91.125 -26.136719 71.941406 -26.136719 Z"/></g></g></g>
+          <g fill="#ffffff" fill-opacity="1"><g transform="translate(524.30888,226.525283)"><g><path d="M 82.730469 -90.167969 L 82.730469 -119.902344 L 55.632812 -119.902344 L 55.632812 -153.472656 L 24.699219 -144.121094 L 24.699219 -119.902344 L 3.835938 -119.902344 L 3.835938 -90.167969 L 24.699219 -90.167969 L 24.699219 -40.285156 C 24.699219 -7.914062 39.328125 4.796875 82.730469 0 L 82.730469 -28.058594 C 64.988281 -27.097656 55.632812 -27.335938 55.632812 -40.285156 L 55.632812 -90.167969 Z"/></g></g></g>
+          <g fill="#ffffff" fill-opacity="1"><g transform="translate(616.633208,226.525283)"><g><path d="M 126.617188 -167.863281 L 3.117188 -167.863281 L 3.117188 -136.207031 L 48.199219 -136.207031 L 48.199219 0 L 81.292969 0 L 81.292969 -136.207031 L 126.617188 -136.207031 Z"/></g></g></g>
+          <g fill="#ffffff" fill-opacity="1"><g transform="translate(724.304968,226.525283)"><g><path d="M 105.273438 -119.902344 L 105.273438 -105.753906 C 96.640625 -116.542969 83.691406 -123.257812 66.1875 -123.257812 C 34.292969 -123.257812 7.914062 -95.683594 7.914062 -59.949219 C 7.914062 -24.21875 34.292969 3.355469 66.1875 3.355469 C 83.691406 3.355469 96.640625 -3.355469 105.273438 -14.148438 L 105.273438 0 L 136.207031 0 L 136.207031 -119.902344 Z M 71.941406 -26.136719 C 52.996094 -26.136719 38.847656 -39.808594 38.847656 -59.949219 C 38.847656 -80.09375 52.996094 -93.761719 71.941406 -93.761719 C 91.125 -93.761719 105.273438 -80.09375 105.273438 -59.949219 C 105.273438 -39.808594 91.125 -26.136719 71.941406 -26.136719 Z"/></g></g></g>
+          <g fill="#ffffff" fill-opacity="1"><g transform="translate(874.422026,226.525283)"><g><path d="M 14.148438 0 L 45.082031 0 L 45.082031 -175.058594 L 14.148438 -175.058594 Z"/></g></g></g>
+          <g fill="#ffffff" fill-opacity="1"><g transform="translate(933.653474,226.525283)"><g><path d="M 124.699219 0 L 75.058594 -60.671875 L 123.257812 -119.902344 L 86.328125 -119.902344 L 45.082031 -67.144531 L 45.082031 -167.863281 L 14.148438 -167.863281 L 14.148438 0 L 45.082031 0 L 45.082031 -54.433594 L 88.726562 0 Z"/></g></g></g>
+        </g></g>
+      </svg>
+    </div>
+    <div class="footer-right">
+      <div class="footer-agent">AI Agent: Elif</div>
+      <div class="footer-tagline">Güzellik merkezleri yapay zekayı<br>cilde taşıdı. Biz telefona getirdik.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function countUp(el, target, duration, isFloat) {
+  const start = performance.now();
+  const update = now => {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const val = target * ease;
+    el.textContent = isFloat
+      ? val.toFixed(1)
+      : Math.round(val).toLocaleString('tr-TR');
+    if (t < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    countUp(document.querySelector('.c1'),  137,  1500, false);
+    countUp(document.querySelector('.c2'),  445,  1500, false);
+    countUp(document.querySelector('.c3'),  3.2,  1500, true);
+    countUp(document.querySelector('.fn1'), 2286, 1600, false);
+    countUp(document.querySelector('.fn2'), 1732, 1600, false);
+    countUp(document.querySelector('.fn3'),  438, 1600, false);
+    countUp(document.querySelector('.fn4'),  137, 1600, false);
+  }, 500);
+});
+</script>
+
+</body>
+</html>

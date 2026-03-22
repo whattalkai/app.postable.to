@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>WhatTalk – Erken Dönüşen Hep Kazandı</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800&display=swap');
+
+:root {
+  --black:        #0A0A0A;
+  --teal:         #00C2A8;
+  --teal-dim:     #00C2A820;
+  --teal-glow:    #00C2A840;
+  --purple:       #7855FF;
+  --purple-dim:   #7855FF25;
+  --white:        #FFFFFF;
+  --grey:         #888888;
+  --border-dark:  #1E1E1E;
+  --red:          #EF4444;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  width: 1080px;
+  min-height: 1920px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+body {
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  position: relative;
+  background: var(--black);
+  font-family: 'Inter', sans-serif;
+  color: var(--white);
+}
+
+/* ── noise overlay ── */
+body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── ambient blobs ── */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(130px);
+  pointer-events: none;
+  z-index: 0;
+}
+.blob-purple {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, #7855FF55 0%, transparent 70%);
+  top: -180px; left: -200px;
+}
+.blob-teal {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, #00C2A835 0%, transparent 70%);
+  bottom: 100px; right: -150px;
+}
+.blob-purple-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, #7855FF30 0%, transparent 70%);
+  bottom: 400px; left: -100px;
+}
+
+/* ── layout ── */
+.canvas {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  padding: 90px 72px 40px;
+}
+
+/* ── safe zone ── */
+.safe-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 40px;
+  /* safe zone: y=285 to y=1635 → 1350px tall */
+}
+
+/* ── animation ── */
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 40px #7855FF60, 0 0 80px #7855FF30, inset 0 0 30px #7855FF10; }
+  50%       { box-shadow: 0 0 60px #7855FF90, 0 0 120px #7855FF50, inset 0 0 40px #7855FF20; }
+}
+
+.animate {
+  opacity: 0;
+  animation: revealUp 0.5s ease-out forwards;
+}
+
+/* ── badge ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 30px;
+  border-radius: 40px;
+  border: 1.5px solid var(--teal);
+  background: #00C2A812;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--teal);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+.badge .dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--teal);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+/* ── headline ── */
+.headline {
+  font-size: 76px;
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-align: center;
+  margin-bottom: 14px;
+  color: var(--white);
+}
+.headline .accent {
+  color: var(--teal);
+}
+
+/* ── subline ── */
+.subline {
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--red);
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+/* ── divider ── */
+.divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-dark), transparent);
+  margin-bottom: 28px;
+}
+
+/* ── section label ── */
+.section-label {
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--grey);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+/* ── era grid ── */
+.eras {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── era card (past) ── */
+.era-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 24px 36px;
+  background: #0F0F0F;
+  border: 1px solid var(--border-dark);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.era-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #333 0%, transparent 100%);
+}
+
+.era-icon {
+  font-size: 52px;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: grayscale(1) opacity(0.55);
+}
+
+.era-text { flex: 1; }
+
+.era-year {
+  display: inline-block;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--grey);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #1A1A1A;
+  border: 1px solid #2A2A2A;
+  border-radius: 40px;
+  padding: 6px 18px;
+  margin-bottom: 8px;
+}
+
+.era-title {
+  font-size: 34px;
+  font-weight: 700;
+  color: #CCCCCC;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.era-desc {
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--grey);
+  line-height: 1.4;
+}
+
+/* ── era card (current / highlight) ── */
+.era-card.current {
+  background: #0E0C1A;
+  border: 1.5px solid var(--purple);
+  animation: glowPulse 3s ease-in-out infinite;
+  padding: 28px 36px;
+  gap: 32px;
+  align-items: stretch;
+}
+.era-card.current::before {
+  background: linear-gradient(180deg, var(--purple) 0%, var(--teal) 100%);
+  width: 4px;
+}
+
+.elif-photo-wrap {
+  flex-shrink: 0;
+  width: 140px;
+  height: 140px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2.5px solid var(--purple);
+  box-shadow: 0 0 30px #7855FF60;
+  position: relative;
+}
+.elif-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+.elif-photo-wrap .badge-ai {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(180deg, transparent, #0E0C1Aee);
+  padding: 10px 10px 8px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--teal);
+  letter-spacing: 0.04em;
+}
+
+.era-card.current .era-year {
+  background: var(--purple-dim);
+  border-color: var(--purple);
+  color: var(--purple);
+  font-size: 22px;
+}
+.era-card.current .era-title {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -0.02em;
+}
+.era-card.current .era-desc {
+  font-size: 28px;
+  color: #CCCCCC;
+  line-height: 1.4;
+}
+.era-card.current .era-icon {
+  filter: none;
+}
+
+/* ── cta block ── */
+.cta-block {
+  width: 100%;
+  margin-top: 28px;
+  padding: 36px 44px;
+  background: linear-gradient(135deg, #7855FF18, #00C2A812);
+  border: 1px solid #7855FF40;
+  border-radius: 22px;
+  text-align: center;
+}
+.cta-q {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--white);
+  margin-bottom: 14px;
+}
+.cta-q em {
+  font-style: italic;
+  color: var(--purple);
+}
+.cta-sub {
+  font-size: 30px;
+  font-weight: 400;
+  color: #AAAAAA;
+  line-height: 1.45;
+}
+
+/* ── logo ── */
+.logo-wrap {
+  margin-top: auto;
+  padding-top: 32px;
+  display: flex;
+  justify-content: center;
+}
+.logo-wrap img {
+  width: 200px;
+  opacity: 0.85;
+}
+
+/* ── export button ── */
+#export-btn {
+  position: fixed;
+  top: 20px; right: 20px;
+  z-index: 9999;
+  padding: 16px 34px;
+  background: var(--purple);
+  color: var(--white);
+  font-family: 'Inter', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px #7855FF60;
+}
+
+/* ── export overlay ── */
+#export-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 9998;
+  align-items: center;
+  justify-content: center;
+}
+#export-overlay.active { display: flex; }
+.export-box {
+  width: 700px;
+  background: #141414;
+  border: 1px solid #2A2A2A;
+  border-radius: 22px;
+  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.export-title { font-size: 32px; font-weight: 700; color: var(--white); }
+.export-bar-bg { width: 100%; height: 12px; background: #2A2A2A; border-radius: 8px; overflow: hidden; }
+.export-bar-fill { height: 100%; width: 0%; background: var(--purple); border-radius: 8px; transition: width 0.3s ease; }
+.export-log {
+  height: 180px;
+  overflow-y: auto;
+  font-size: 20px;
+  font-family: monospace;
+  color: #888;
+  background: #0A0A0A;
+  border-radius: 10px;
+  padding: 16px;
+  line-height: 1.6;
+}
+.export-status { font-size: 26px; color: var(--grey); }
+#export-download {
+  display: none;
+  padding: 18px 36px;
+  background: var(--teal);
+  color: var(--black);
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  align-self: flex-end;
+}
+#export-close {
+  padding: 14px 28px;
+  background: transparent;
+  color: var(--grey);
+  font-family: 'Inter', sans-serif;
+  font-size: 24px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  cursor: pointer;
+  align-self: flex-end;
+}
+</style>
+</head>
+<body>
+
+<!-- ambient -->
+<div class="blob blob-purple"></div>
+<div class="blob blob-teal"></div>
+<div class="blob blob-purple-2"></div>
+
+<!-- export UI -->
+<button id="export-btn" onclick="startExport()">▶ MP4 İndir</button>
+
+<div id="export-overlay">
+  <div class="export-box">
+    <div class="export-title">Video dışa aktarılıyor…</div>
+    <div class="export-bar-bg"><div class="export-bar-fill" id="exp-bar"></div></div>
+    <div class="export-log" id="exp-log"></div>
+    <div class="export-status" id="exp-status">Başlatılıyor…</div>
+    <button id="export-download" onclick="doDownload()">İndir &amp; Kapat</button>
+    <button id="export-close" onclick="closeExport()">Kapat</button>
+  </div>
+</div>
+
+<!-- canvas -->
+<div class="canvas">
+  <div class="safe-zone">
+
+    <!-- badge -->
+    <div class="badge animate" style="animation-delay:0s">
+      <span class="dot"></span>
+      Teknoloji iş hayatını hep dönüştürdü
+    </div>
+
+    <!-- headline -->
+    <div class="headline animate" style="animation-delay:0.8s">
+      Erken Dönüşen<br><span class="accent">Hep Kazandı.</span>
+    </div>
+
+    <!-- subline -->
+    <div class="subline animate" style="animation-delay:1.6s">
+      Direnen Geride Kaldı.
+    </div>
+
+    <!-- divider -->
+    <div class="divider animate" style="animation-delay:2.4s"></div>
+
+    <div class="section-label animate" style="animation-delay:2.4s">Her devrimde aynı hikâye tekrarlandı</div>
+
+    <!-- era cards -->
+    <div class="eras">
+
+      <!-- 1990s -->
+      <div class="era-card animate" style="animation-delay:3.2s">
+        <div class="era-icon">🖥️</div>
+        <div class="era-text">
+          <div class="era-year">1990'lar</div>
+          <div class="era-title">Bilgisayar Devrimi</div>
+          <div class="era-desc">Randevuları deftere yazan salonlar, bilgisayara geçenlerin gerisinde kaldı.</div>
+        </div>
+      </div>
+
+      <!-- 2000s -->
+      <div class="era-card animate" style="animation-delay:4.0s">
+        <div class="era-icon">🌐</div>
+        <div class="era-text">
+          <div class="era-year">2000'ler</div>
+          <div class="era-title">İnternet Devrimi</div>
+          <div class="era-desc">Web sitesi açan merkezler yeni müşteri buldu. Açmayanlar sadece tavsiyeye muhtaç kaldı.</div>
+        </div>
+      </div>
+
+      <!-- 2010s -->
+      <div class="era-card animate" style="animation-delay:4.8s">
+        <div class="era-icon">📱</div>
+        <div class="era-text">
+          <div class="era-year">2010'lar</div>
+          <div class="era-title">Mobil Devrim</div>
+          <div class="era-desc">Instagram'a giren salonlar dolup taştı. Girmeyen "müşteri azaldı" dedi.</div>
+        </div>
+      </div>
+
+      <!-- 2024+ current -->
+      <div class="era-card current animate" style="animation-delay:5.6s">
+        <div class="elif-photo-wrap">
+          <img src="elif.jpg" alt="Elif – Yapay Zeka Asistan"
+               onerror="this.parentElement.innerHTML='<div style=\'width:100%;height:100%;background:linear-gradient(135deg,#7855FF,#00C2A8);display:flex;align-items:center;justify-content:center;font-size:64px;\'>🤖</div>'">
+          <div class="badge-ai">ELİF</div>
+        </div>
+        <div class="era-text">
+          <div class="era-year">2024+</div>
+          <div class="era-title">Yapay Zeka Çalışan Devrimi</div>
+          <div class="era-desc">Elif'i çalıştıran merkezler referansı sistematik topluyor. Diğerleri hâlâ şansa güveniyor.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- cta -->
+    <div class="cta-block animate" style="animation-delay:6.4s">
+      <div class="cta-q">Siz hangi taraftasınız?<br><em>Erken mi? Geç mi?</em></div>
+      <div class="cta-sub">Yapay Zeka asistanınız Elif sizi bekliyor.<br>Şimdi başlayın — rakibiniz başlamadan önce.</div>
+    </div>
+
+  </div>
+
+  <!-- logo -->
+  <div class="logo-wrap animate" style="animation-delay:7.2s">
+    <img src="../brand/logo-white.svg" alt="WhatTalk.ai">
+  </div>
+</div>
+
+<script>
+const EXPORT_FILE = 'outputs%2Fstory-erken-donusen-2026-03-21.html';
+
+function startExport() {
+  document.getElementById('export-overlay').classList.add('active');
+  const log = document.getElementById('exp-log');
+  const bar = document.getElementById('exp-bar');
+  const status = document.getElementById('exp-status');
+  log.innerHTML = '';
+  bar.style.width = '0%';
+  status.textContent = 'Bağlanıyor…';
+
+  const es = new EventSource('http://localhost:3131/export?file=' + EXPORT_FILE);
+  es.onmessage = (e) => {
+    const line = e.data;
+    log.innerHTML += line + '\n';
+    log.scrollTop = log.scrollHeight;
+
+    const m = line.match(/(\d+)\/(\d+)/);
+    if (m) {
+      const pct = Math.round((parseInt(m[1]) / parseInt(m[2])) * 100);
+      bar.style.width = pct + '%';
+      status.textContent = `Kare ${m[1]} / ${m[2]} işleniyor…`;
+    }
+    if (line.includes('done')) {
+      bar.style.width = '100%';
+      status.textContent = 'Tamamlandı!';
+      document.getElementById('export-download').style.display = 'block';
+      es.close();
+    }
+    if (line.toLowerCase().includes('error') || line.toLowerCase().includes('hata')) {
+      status.textContent = 'Hata oluştu.';
+      document.getElementById('export-close').style.display = 'block';
+      es.close();
+    }
+  };
+  es.onerror = () => {
+    status.textContent = 'Bağlantı hatası.';
+    es.close();
+  };
+}
+
+function doDownload() {
+  window.open('http://localhost:3131/download?file=' + EXPORT_FILE.replace('.html', '.mp4'));
+  closeExport();
+}
+
+function closeExport() {
+  document.getElementById('export-overlay').classList.remove('active');
+}
+</script>
+</body>
+</html>

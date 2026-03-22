@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=1080"/>
+<title>Elif — WhatTalk.ai</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --black:      #0A0A0A;
+  --teal:       #00C2A8;
+  --teal-dim:   rgba(0,194,168,.13);
+  --teal-mid:   rgba(0,194,168,.35);
+  --purple:     #7855FF;
+  --purple-dim: rgba(120,85,255,.12);
+  --card-bg:    #F2F2F2;
+  --border:     #E0E0E0;
+  --grey:       #888888;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { width: 1080px; min-height: 1920px; overflow-y: auto; }
+
+body {
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+}
+
+/* ─── ANIMATIONS ─────────────────────────── */
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes panelIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes panelOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.animate {
+  opacity: 0;
+  animation: revealUp 0.5s ease-out forwards;
+}
+
+/* ─── BACKGROUND DECO ─────────────────────── */
+.top-stripe {
+  position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(90deg, var(--purple) 0%, var(--teal) 100%);
+}
+.top-deco {
+  position: absolute; top: 0; left: 0; right: 0; height: 285px;
+  background: linear-gradient(180deg, #F5F5F5 0%, #FFFFFF 100%);
+  pointer-events: none;
+}
+.bottom-deco {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 285px;
+  background: linear-gradient(0deg, #F5F5F5 0%, #FFFFFF 100%);
+  pointer-events: none;
+}
+
+/* ─── MAIN CONTENT ────────────────────────── */
+.content {
+  position: absolute;
+  top: 285px; left: 0; right: 0;
+  padding: 44px 72px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ─── BADGE ───────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 14px;
+  background: var(--black); color: #FFF;
+  padding: 14px 34px; border-radius: 60px;
+  font-size: 26px; font-weight: 600; letter-spacing: 0.04em;
+  margin-bottom: 32px;
+}
+.badge-dot {
+  width: 11px; height: 11px; background: var(--purple);
+  border-radius: 50%; flex-shrink: 0;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+/* ─── HERO TITLE ──────────────────────────── */
+.hero-title {
+  font-size: 62px; font-weight: 800; color: var(--black);
+  line-height: 1.06; letter-spacing: -0.03em;
+  text-align: center; margin-bottom: 36px;
+}
+
+/* ─── PROFILE CARD (fixed, always visible) ── */
+.profile-card {
+  width: 100%;
+  background: var(--card-bg);
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--purple);
+  overflow: hidden;
+  box-shadow: 0 4px 28px rgba(0,0,0,.07);
+}
+
+/* ─── CARD HEADER (never disappears) ─────── */
+.card-header {
+  display: flex; align-items: stretch;
+}
+.photo-col {
+  width: 250px; flex-shrink: 0;
+  background: #DCDCDC; overflow: hidden;
+  position: relative; min-height: 270px;
+}
+.elif-photo {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center top; display: block;
+}
+.photo-fallback {
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, #EDE9FF 0%, #E0FAF8 100%);
+  display: flex; align-items: center; justify-content: center; font-size: 80px;
+}
+.info-col {
+  flex: 1; padding: 32px 40px;
+  display: flex; flex-direction: column; justify-content: center; gap: 10px;
+  border-left: 1px solid var(--border); background: #FAFAFA;
+}
+.agent-name { font-size: 58px; font-weight: 800; color: var(--black); letter-spacing: -0.02em; line-height: 1; }
+.agent-role { font-size: 27px; font-weight: 500; color: #555; line-height: 1.35; }
+.ai-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--purple-dim); border: 1.5px solid rgba(120,85,255,.3);
+  color: var(--purple); border-radius: 50px; padding: 7px 20px;
+  font-size: 23px; font-weight: 600; letter-spacing: 0.03em; width: fit-content;
+}
+
+/* ─── CARD BODY SWAP AREA ────────────────── */
+.card-body-area {
+  position: relative;
+  height: 672px;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+}
+
+/* ─── PANELS (swap inside card body) ──────── */
+.panel {
+  position: absolute;
+  inset: 0;
+  padding: 32px 40px;
+  opacity: 0;
+}
+
+/* Panel 1 — visible from start, fades out at 8s */
+#panel-1 {
+  opacity: 1;
+  animation: panelOut 0.6s ease-in-out 8s forwards;
+}
+
+/* Panel 2 — fades in at 8s, fades out at 16.5s */
+#panel-2 {
+  animation: panelIn 0.6s ease-in-out 8s forwards, panelOut 0.6s ease-in-out 16.5s forwards;
+}
+
+/* Panel 3 — fades in at 16.5s, stays */
+#panel-3 {
+  animation: panelIn 0.6s ease-in-out 16.5s forwards;
+}
+
+/* ─── PANEL 1: Features / Channels / Steps ─ */
+.section-label {
+  font-size: 20px; font-weight: 700; color: var(--grey);
+  letter-spacing: 0.09em; text-transform: uppercase; margin-bottom: 12px;
+}
+.features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.feature-pill {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--teal-dim); border: 1.5px solid var(--teal-mid);
+  border-radius: 60px; padding: 14px 26px;
+  font-size: 27px; font-weight: 500; color: var(--black); line-height: 1.25;
+}
+.feat-icon {
+  width: 42px; height: 42px; background: var(--teal); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: white; font-size: 18px; font-weight: 700;
+}
+.divider { height: 1px; background: var(--border); margin-bottom: 24px; }
+.channel-pills { display: flex; gap: 14px; margin-bottom: 24px; }
+.channel-pill {
+  display: flex; align-items: center; gap: 10px;
+  background: white; border: 1.5px solid #D0D0D0; border-radius: 60px;
+  padding: 11px 26px; font-size: 27px; font-weight: 500; color: var(--black);
+}
+.steps-flow { display: flex; align-items: flex-start; width: 100%; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
+.step-num {
+  width: 48px; height: 48px; background: var(--teal); color: white;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; flex-shrink: 0;
+}
+.step-lbl { font-size: 20px; font-weight: 500; color: var(--black); text-align: center; line-height: 1.3; }
+.step-conn { height: 2px; background: #CCC; flex: 0 0 22px; margin-top: 23px; }
+
+/* ─── PANEL 2: Görev Tanımı ───────────────── */
+.panel-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-icon {
+  width: 48px; height: 48px; background: var(--black); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: white; flex-shrink: 0;
+}
+.panel-title { font-size: 28px; font-weight: 700; color: var(--black); }
+
+.task-list { display: flex; flex-direction: column; gap: 13px; }
+.task-item {
+  display: flex; align-items: flex-start; gap: 18px;
+  background: white; border-radius: 14px; padding: 17px 22px;
+  border: 1px solid var(--border);
+}
+.task-num {
+  width: 44px; height: 44px; flex-shrink: 0;
+  background: var(--black); color: white; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700;
+}
+.task-text {
+  font-size: 24px; font-weight: 500; color: var(--black);
+  line-height: 1.45; padding-top: 7px;
+}
+
+/* Tighter padding for panels 2 & 3 */
+#panel-2, #panel-3 { padding: 24px 36px; }
+
+/* Panel 2 task animations (appear after panel fades in) */
+#panel-2 .task-item:nth-child(1) { opacity: 0; animation: revealUp 0.5s ease-out 8.7s forwards; }
+#panel-2 .task-item:nth-child(2) { opacity: 0; animation: revealUp 0.5s ease-out 9.4s forwards; }
+#panel-2 .task-item:nth-child(3) { opacity: 0; animation: revealUp 0.5s ease-out 10.1s forwards; }
+#panel-2 .task-item:nth-child(4) { opacity: 0; animation: revealUp 0.5s ease-out 10.8s forwards; }
+#panel-2 .task-item:nth-child(5) { opacity: 0; animation: revealUp 0.5s ease-out 11.5s forwards; }
+#panel-2 .panel-header { opacity: 0; animation: revealUp 0.5s ease-out 8.4s forwards; }
+
+/* ─── PANEL 3: Yan Görevleri ─────────────── */
+.side-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+}
+.side-card {
+  background: white; border-radius: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 7px;
+}
+.side-icon {
+  width: 40px; height: 40px; background: var(--black); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; color: white; flex-shrink: 0;
+}
+.side-title { font-size: 22px; font-weight: 700; color: var(--black); line-height: 1.2; }
+.side-desc { font-size: 17px; font-weight: 400; color: #666; line-height: 1.4; }
+
+/* Panel 3 card animations */
+#panel-3 .panel-header   { opacity: 0; animation: revealUp 0.5s ease-out 17.1s forwards; }
+#panel-3 .side-card:nth-child(1) { opacity: 0; animation: revealUp 0.5s ease-out 17.1s forwards; }
+#panel-3 .side-card:nth-child(2) { opacity: 0; animation: revealUp 0.5s ease-out 17.7s forwards; }
+#panel-3 .side-card:nth-child(3) { opacity: 0; animation: revealUp 0.5s ease-out 18.3s forwards; }
+#panel-3 .side-card:nth-child(4) { opacity: 0; animation: revealUp 0.5s ease-out 18.9s forwards; }
+#panel-3 .side-card:nth-child(5) { opacity: 0; animation: revealUp 0.5s ease-out 19.5s forwards; }
+#panel-3 .side-card:nth-child(6) { opacity: 0; animation: revealUp 0.5s ease-out 20.1s forwards; }
+
+/* ─── PROGRESS BAR (standalone row, outside card) ─── */
+@keyframes dotActivate {
+  from { background: #D8D8D8; border-color: #D8D8D8; color: #999; }
+  to   { background: var(--purple); border-color: var(--purple); color: white; }
+}
+@keyframes lineFill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+@keyframes ctrOut { from { opacity:1; } to { opacity:0; } }
+@keyframes ctrIn  { from { opacity:0; } to { opacity:1; } }
+@keyframes labelActivate {
+  from { color: #BBBBBB; font-weight: 500; }
+  to   { color: var(--black); font-weight: 600; }
+}
+
+.progress-wrap {
+  width: 100%;
+  padding: 18px 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: transparent;
+}
+
+/* Steps + lines */
+.steps-track {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.sdot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid #D8D8D8;
+  background: #D8D8D8;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: #999;
+  flex-shrink: 0; z-index: 1;
+  transition: all 0.4s ease;
+}
+/* Step 1 is active from the start */
+.sdot-1 {
+  background: var(--purple);
+  border-color: var(--purple);
+  color: white;
+}
+/* Step 2 activates at 8s */
+.sdot-2 {
+  animation: dotActivate 0.5s ease-out 8s forwards;
+}
+/* Step 3 activates at 16.5s */
+.sdot-3 {
+  animation: dotActivate 0.5s ease-out 16.5s forwards;
+}
+
+.sline {
+  flex: 1; height: 3px; background: #E0E0E0;
+  position: relative; overflow: hidden;
+}
+.sline-fill {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: var(--purple); width: 0%;
+}
+/* Line 1 fills at 8s */
+.sline-fill-1 { animation: lineFill 0.6s ease-out 8s forwards; }
+/* Line 2 fills at 16.5s */
+.sline-fill-2 { animation: lineFill 0.6s ease-out 16.5s forwards; }
+
+/* Step labels row */
+.slabels {
+  display: flex; margin-top: 10px;
+  padding: 0 0px;
+}
+.slabel {
+  font-size: 18px; font-weight: 500; color: #BBBBBB;
+  text-align: center; flex: 1; line-height: 1.2;
+  transition: color 0.4s ease;
+}
+.slabel-1 { color: var(--black); font-weight: 600; }
+.slabel-2 { animation: labelActivate 0.5s ease-out 8s forwards; }
+.slabel-3 { animation: labelActivate 0.5s ease-out 16.5s forwards; }
+
+.steps-col { flex: 1; display: flex; flex-direction: column; }
+
+/* Counter badge */
+.step-counter {
+  width: 72px; height: 72px;
+  background: var(--black); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-left: 28px;
+  position: relative; overflow: hidden;
+}
+.ctr-label {
+  position: absolute;
+  font-size: 19px; font-weight: 800; color: white;
+  letter-spacing: 0.02em;
+  opacity: 0;
+}
+.ctr-1 {
+  opacity: 1;
+  animation: ctrOut 0.3s ease-in 7.8s forwards;
+}
+.ctr-2 {
+  animation: ctrIn 0.3s ease-out 8.1s forwards, ctrOut 0.3s ease-in 16.3s forwards;
+}
+.ctr-3 {
+  animation: ctrIn 0.3s ease-out 16.8s forwards;
+}
+
+/* ─── LOGO ────────────────────────────────── */
+.logo {
+  position: absolute; bottom: 64px; left: 50%;
+  transform: translateX(-50%); opacity: 0.85;
+}
+.logo img { width: 200px; height: auto; display: block; }
+
+/* ─── EXPORT BUTTON ───────────────────────── */
+#export-btn {
+  position: fixed; top: 16px; right: 16px;
+  background: var(--purple); color: white;
+  border: none; border-radius: 10px; padding: 12px 24px;
+  font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
+  cursor: pointer; z-index: 9999; letter-spacing: 0.02em;
+  box-shadow: 0 4px 20px rgba(120,85,255,.4);
+}
+#export-btn:hover { background: #6644DD; }
+#export-btn:disabled { background: #999; cursor: not-allowed; box-shadow: none; }
+
+/* ─── EXPORT DIALOG ───────────────────────── */
+#export-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.65); z-index: 99999;
+  align-items: center; justify-content: center;
+}
+#export-overlay.active { display: flex; }
+#export-dialog {
+  background: #1A1A1A; border-radius: 16px; padding: 36px 40px; width: 460px;
+  font-family: 'Inter', sans-serif; color: white;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6); border: 1px solid #333;
+}
+#export-dialog h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+#export-status { font-size: 13px; color: #aaa; margin-bottom: 20px; min-height: 18px; }
+#export-bar-track { background: #333; border-radius: 99px; height: 8px; width: 100%; overflow: hidden; margin-bottom: 20px; }
+#export-bar-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--teal)); border-radius: 99px; width: 0%; transition: width 0.4s ease; }
+#export-log { background: #111; border-radius: 8px; padding: 12px 14px; font-size: 11px; color: #666; font-family: monospace; max-height: 120px; overflow-y: auto; margin-bottom: 20px; line-height: 1.6; }
+#export-close-btn { display: none; width: 100%; padding: 12px; background: var(--teal); color: #000; border: none; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+#export-close-btn:hover { background: #00a890; }
+</style>
+</head>
+<body>
+
+<div class="top-stripe"></div>
+<div class="top-deco"></div>
+<div class="bottom-deco"></div>
+
+<div class="content">
+
+  <!-- Badge — stays forever -->
+  <div class="badge animate" style="animation-delay:0s">
+    <span class="badge-dot"></span>
+    Elif ile Tanışın
+  </div>
+
+  <!-- Title — stays forever -->
+  <h1 class="hero-title animate" style="animation-delay:0.7s">
+    Elif Merkeziniz İçin<br>Çalışmaya Hazır
+  </h1>
+
+  <!-- PROGRESS BAR — standalone between title and card -->
+  <div class="progress-wrap animate" style="animation-delay:1.4s">
+    <div class="steps-col">
+      <div class="steps-track">
+        <div class="sdot sdot-1">1</div>
+        <div class="sline"><div class="sline-fill sline-fill-1"></div></div>
+        <div class="sdot sdot-2">2</div>
+        <div class="sline"><div class="sline-fill sline-fill-2"></div></div>
+        <div class="sdot sdot-3">3</div>
+      </div>
+      <div class="slabels">
+        <div class="slabel slabel-1">Yetenekleri</div>
+        <div class="slabel slabel-2">Görev Tanımı</div>
+        <div class="slabel slabel-3">Yan Görevleri</div>
+      </div>
+    </div>
+    <div class="step-counter">
+      <span class="ctr-label ctr-1">1/3</span>
+      <span class="ctr-label ctr-2">2/3</span>
+      <span class="ctr-label ctr-3">3/3</span>
+    </div>
+  </div>
+
+  <!-- Profile Card -->
+  <div class="profile-card animate" style="animation-delay:1.8s">
+
+    <!-- CARD HEADER — stays forever -->
+    <div class="card-header">
+      <div class="photo-col">
+        <img src="elif.jpg" class="elif-photo" alt="Elif"
+          onerror="this.style.display='none';document.getElementById('pf').style.display='flex';"/>
+        <div class="photo-fallback" id="pf" style="display:none">👩‍💼</div>
+      </div>
+      <div class="info-col">
+        <div class="agent-name">Elif</div>
+        <div class="agent-role">Memnuniyet &amp; Referans<br>Uzmanı</div>
+        <div class="ai-tag">✦&nbsp; Yapay Zeka</div>
+      </div>
+    </div>
+
+    <!-- CARD BODY — content swaps here -->
+    <div class="card-body-area">
+
+      <!-- ── PANEL 1: Capabilities ── -->
+      <div class="panel" id="panel-1">
+        <div class="features animate" style="animation-delay:2.1s">
+          <div class="feature-pill">
+            <div class="feat-icon">↗</div>
+            Düzenli yeni referans akışı ve ciro artışı sağlar.
+          </div>
+          <div class="feature-pill">
+            <div class="feat-icon">◎</div>
+            Müşterilerin memnuniyet durumlarını raporlar.
+          </div>
+        </div>
+
+        <div class="divider animate" style="animation-delay:2.9s"></div>
+
+        <div class="animate" style="animation-delay:2.9s">
+          <div class="section-label">Çalıştığı Kanallar</div>
+          <div class="channel-pills">
+            <div class="channel-pill">☎&nbsp; Telefon</div>
+            <div class="channel-pill">💬&nbsp; WhatsApp</div>
+          </div>
+        </div>
+
+        <div class="divider animate" style="animation-delay:3.7s"></div>
+
+        <div class="animate" style="animation-delay:3.7s">
+          <div class="section-label">Başarı Aşamaları</div>
+          <div class="steps-flow">
+            <div class="step"><div class="step-num">1</div><div class="step-lbl">Ulaşıldı</div></div>
+            <div class="step-conn"></div>
+            <div class="step"><div class="step-num">2</div><div class="step-lbl">Memnuniyet Öğrenildi</div></div>
+            <div class="step-conn"></div>
+            <div class="step"><div class="step-num">3</div><div class="step-lbl">Kampanyaya Katıldı</div></div>
+            <div class="step-conn"></div>
+            <div class="step"><div class="step-num">4</div><div class="step-lbl">Referans Gönderdi</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PANEL 2: Görev Tanımı ── -->
+      <div class="panel" id="panel-2">
+        <div class="panel-header">
+          <div class="panel-icon">✦</div>
+          <div class="panel-title">Görev Tanımı</div>
+        </div>
+        <div class="task-list">
+          <div class="task-item">
+            <div class="task-num">1</div>
+            <div class="task-text">Telefonla arayarak memnuniyet anketi yapar.</div>
+          </div>
+          <div class="task-item">
+            <div class="task-num">2</div>
+            <div class="task-text">Memnun müşterilere referans kampanyası tanıtımı yapar, kampanya katılım mesajını göndermeyi teklif eder.</div>
+          </div>
+          <div class="task-item">
+            <div class="task-num">3</div>
+            <div class="task-text">Müşteri katılmak isterse WhatsApp üzerinden referans mesajını gönderir.</div>
+          </div>
+          <div class="task-item">
+            <div class="task-num">4</div>
+            <div class="task-text">WhatsApp sohbetiyle referans isimlerini ve telefonlarını kaydeder, her bir referansı aldığını teyit eder.</div>
+          </div>
+          <div class="task-item">
+            <div class="task-num">5</div>
+            <div class="task-text">Nazik bir dille daha fazla referans paylaşılması için teşvik eder.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PANEL 3: Yan Görevleri ── -->
+      <div class="panel" id="panel-3">
+        <div class="panel-header">
+          <div class="panel-icon">✦</div>
+          <div class="panel-title">Yan Görevleri</div>
+        </div>
+        <div class="side-grid">
+          <div class="side-card">
+            <div class="side-icon">✆</div>
+            <div class="side-title">Geri Arama</div>
+            <div class="side-desc">Ulaşılamayan müşterileri uygun aralıklarda otomatik geri arar.</div>
+          </div>
+          <div class="side-card">
+            <div class="side-icon">◎</div>
+            <div class="side-title">Takip Mesajları</div>
+            <div class="side-desc">3 gün boyunca 3 farklı mesajla referans göndermeyi hatırlatır.</div>
+          </div>
+          <div class="side-card">
+            <div class="side-icon">✕</div>
+            <div class="side-title">Şikayet Yönetimi</div>
+            <div class="side-desc">Memnun olmayan müşterilerden şikayet kaydı alır, ekibi bilgilendirir.</div>
+          </div>
+          <div class="side-card">
+            <div class="side-icon">▦</div>
+            <div class="side-title">Randevu Teyidi</div>
+            <div class="side-desc">Randevu taleplerini sesli ve yazılı teyit eder, ekibi WhatsApp'tan bilgilendirir.</div>
+          </div>
+          <div class="side-card">
+            <div class="side-icon">◉</div>
+            <div class="side-title">Konum Paylaşma</div>
+            <div class="side-desc">Adres isteyen müşterilere WhatsApp üzerinden konum ve bilgi gönderir.</div>
+          </div>
+          <div class="side-card">
+            <div class="side-icon">☰</div>
+            <div class="side-title">Görev Atama</div>
+            <div class="side-desc">Gerektiğinde insan sorumluya otomatik görev atar, takibini sağlar.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /card-body-area -->
+  </div><!-- /profile-card -->
+
+</div><!-- /content -->
+
+<!-- Logo — always visible -->
+<div class="logo animate" style="animation-delay:2.1s">
+  <img src="../brand/logo-dark.svg" alt="WhatTalk.ai"/>
+</div>
+
+<!-- Export Button + Dialog -->
+<button id="export-btn" onclick="startExport()">▶ MP4 Olarak İndir</button>
+
+<div id="export-overlay">
+  <div id="export-dialog">
+    <h3>Video Hazırlanıyor...</h3>
+    <div id="export-status">Başlatılıyor...</div>
+    <div id="export-bar-track"><div id="export-bar-fill"></div></div>
+    <div id="export-log"></div>
+    <button id="export-close-btn" onclick="closeExport()">İndir &amp; Kapat</button>
+  </div>
+</div>
+
+<script>
+let exportDoneUrl = null;
+function startExport() {
+  const btn = document.getElementById('export-btn');
+  btn.disabled = true;
+  const overlay  = document.getElementById('export-overlay');
+  const status   = document.getElementById('export-status');
+  const bar      = document.getElementById('export-bar-fill');
+  const log      = document.getElementById('export-log');
+  const closeBtn = document.getElementById('export-close-btn');
+  overlay.classList.add('active');
+  status.textContent = 'Bağlanıyor...';
+  bar.style.width = '0%';
+  log.textContent = '';
+  closeBtn.style.display = 'none';
+  exportDoneUrl = null;
+  const es = new EventSource('http://localhost:3131/export?file=outputs%2Fstory-elif-agent-2026-03-20.html');
+  es.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'log') {
+      const msg = d.msg.trim();
+      if (msg && !msg.startsWith('\r')) status.textContent = msg;
+      const m = msg.match(/(\d+)\/(\d+)/);
+      if (m) {
+        bar.style.width = Math.round((parseInt(m[1]) / parseInt(m[2])) * 90) + '%';
+        status.textContent = `Kare işleniyor: ${m[1]} / ${m[2]}`;
+      }
+      log.textContent += msg + '\n';
+      const lines = log.textContent.split('\n');
+      if (lines.length > 30) log.textContent = lines.slice(-30).join('\n');
+      log.scrollTop = log.scrollHeight;
+    }
+    if (d.type === 'done') {
+      es.close(); bar.style.width = '100%';
+      status.textContent = 'Video hazır!';
+      exportDoneUrl = 'http://localhost:3131/download?file=' + encodeURIComponent(d.file);
+      closeBtn.style.display = 'block'; btn.disabled = false;
+    }
+    if (d.type === 'error') {
+      es.close(); status.textContent = 'Hata: ' + d.msg;
+      btn.disabled = false; closeBtn.textContent = 'Kapat'; closeBtn.style.display = 'block';
+    }
+  };
+  es.onerror = () => {
+    es.close(); status.textContent = 'Bağlantı hatası.';
+    btn.disabled = false; closeBtn.textContent = 'Kapat'; closeBtn.style.display = 'block';
+  };
+}
+function closeExport() {
+  document.getElementById('export-overlay').classList.remove('active');
+  if (exportDoneUrl) { window.location.href = exportDoneUrl; exportDoneUrl = null; }
+  document.getElementById('export-close-btn').textContent = 'İndir & Kapat';
+}
+</script>
+
+</body>
+</html>

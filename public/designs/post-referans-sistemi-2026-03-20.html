@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080">
+  <title>WhatTalk — Otomatik Referans Toplama Sistemi</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    :root {
+      --black:       #0A0A0A;
+      --teal:        #00C2A8;
+      --teal-dim:    rgba(0,194,168,0.09);
+      --teal-border: rgba(0,194,168,0.28);
+      --red:         #EF4444;
+      --red-dim:     rgba(239,68,68,0.08);
+      --red-border:  rgba(239,68,68,0.22);
+      --white:       #FFFFFF;
+      --text:        #0A0A0A;
+      --text-muted:  #4A4A4A;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 1080px;
+      background: #1a1a1a;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* ── Buttons row ── */
+    .btn-row { display: flex; width: 1080px; }
+    .btn-row button {
+      flex: 1; padding: 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: 18px; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      border: none; cursor: pointer;
+    }
+    .btn-row button:disabled { opacity: 0.6; cursor: wait; }
+    #download-btn { background: #00C2A8; color: #0A0A0A; }
+    #download-btn:hover:not(:disabled) { background: #00a890; }
+    #export-btn   { background: #7855FF; color: #ffffff; }
+    #export-btn:hover:not(:disabled)   { background: #6644ee; }
+
+    /* ── Canvas ── */
+    #canvas {
+      width: 1080px;
+      height: 1920px;
+      background: #FFFFFF;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* subtle top gradient to add depth */
+    .bg-top-fade {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 320px;
+      background: linear-gradient(180deg, #F7F7F7 0%, #FFFFFF 100%);
+      pointer-events: none;
+    }
+
+    /* ── Safe zone (top 285px, height 1350px) ── */
+    .safe-zone {
+      position: absolute;
+      top: 285px; left: 0;
+      width: 1080px;
+      height: 1350px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 56px 52px;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--black);
+      border-radius: 40px;
+      padding: 14px 36px;
+      margin-bottom: 36px;
+    }
+    .badge-text {
+      font-size: 26px;
+      font-weight: 500;
+      color: #FFFFFF;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Headline ── */
+    .headline {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .headline h1 {
+      font-size: 68px;
+      font-weight: 800;
+      color: var(--black);
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+    }
+
+    /* ── Comparison block ── */
+    .comparison {
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* column headers */
+    .col-headers {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      margin-bottom: 4px;
+    }
+    .col-header {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .col-header-icon {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .red-header  .col-header-icon { background: rgba(239,68,68,0.12);  color: var(--red);  }
+    .teal-header .col-header-icon { background: rgba(0,194,168,0.14);  color: var(--teal); }
+
+    .col-header-text {
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .red-header  .col-header-text { color: var(--red);  }
+    .teal-header .col-header-text { color: var(--teal); }
+
+    /* ── Card row ── */
+    .card-row {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* ── Card ── */
+    .card {
+      flex: 1;
+      border-radius: 20px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .red-card  { background: var(--red-dim);  border: 1px solid var(--red-border);  }
+    .teal-card { background: var(--teal-dim); border: 1px solid var(--teal-border); }
+
+    .card-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .red-card  .card-icon { background: rgba(239,68,68,0.18);  color: var(--red);  }
+    .teal-card .card-icon { background: rgba(0,194,168,0.18);  color: var(--teal); }
+
+    .card-text {
+      font-size: 27px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.48;
+    }
+
+    /* ── Logo — absolutely at canvas bottom, outside safe zone ── */
+    .logo-bottom {
+      position: absolute;
+      bottom: 90px; left: 0;
+      width: 1080px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* ── Animation ── */
+    @keyframes revealUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate {
+      opacity: 0;
+      animation: revealUp 0.5s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="btn-row">
+    <button id="download-btn" onclick="downloadPNG()">⬇ PNG olarak indir</button>
+    <button id="export-btn"   onclick="exportMP4()">⬇ MP4 olarak indir</button>
+  </div>
+
+  <div id="canvas">
+    <div class="bg-top-fade"></div>
+
+    <div class="safe-zone">
+
+      <!-- Badge -->
+      <div class="badge animate" style="animation-delay:0s;">
+        <span class="badge-text">Yeni Referansları Yapay Zekayla Toplayın</span>
+      </div>
+
+      <!-- Headline -->
+      <div class="headline animate" style="animation-delay:0.8s;">
+        <h1>Otomatik Yeni Referans<br>Toplama Sistemi</h1>
+      </div>
+
+      <!-- Comparison -->
+      <div class="comparison">
+
+        <!-- Column headers -->
+        <div class="col-headers animate" style="animation-delay:1.6s;">
+          <div class="col-header red-header">
+            <div class="col-header-icon">✗</div>
+            <span class="col-header-text">Şu An Ne<br>Kaybediyorsunuz?</span>
+          </div>
+          <div class="col-header teal-header">
+            <div class="col-header-icon">✓</div>
+            <span class="col-header-text">Elif Bunu Nasıl<br>Değiştiriyor?</span>
+          </div>
+        </div>
+
+        <!-- Row 1 — ends 3.1s, 0.9s to read before row 2 -->
+        <div class="card-row animate" style="animation-delay:2.6s;">
+          <div class="card red-card">
+            <div class="card-icon">✗</div>
+            <p class="card-text">Hizmet bitti, müşteri memnun ayrıldı — ama siz bir daha aramadınız. O müşteri 3 kişiye söyleyebilirdi.</p>
+          </div>
+          <div class="card teal-card">
+            <div class="card-icon">✓</div>
+            <p class="card-text">Hizmet sonrası her müşteriyi arar, yeni referans kampanyasına davet eder.</p>
+          </div>
+        </div>
+
+        <!-- Row 2 — ends 4.5s, 1.0s to read before row 3 -->
+        <div class="card-row animate" style="animation-delay:4.0s;">
+          <div class="card red-card">
+            <div class="card-icon">✗</div>
+            <p class="card-text">Kaç referans geldi bu ay? Nereden geldi? Çoğu merkez bilmiyor.</p>
+          </div>
+          <div class="card teal-card">
+            <div class="card-icon">✓</div>
+            <p class="card-text">Her yeni referans kayıt altında — kim gönderdi, kim geldi, hepsi panelinizde.</p>
+          </div>
+        </div>
+
+        <!-- Row 3 — ends 6.0s -->
+        <div class="card-row animate" style="animation-delay:5.5s;">
+          <div class="card red-card">
+            <div class="card-icon">✗</div>
+            <p class="card-text">1 yıldızlı yorum geldi. Öğrendiniz — ama 3 gün sonra. İş işten geçmişti.</p>
+          </div>
+          <div class="card teal-card">
+            <div class="card-icon">✓</div>
+            <p class="card-text">Memnun olmayanları tespit eder, sizi bilgilendirir — şikayet yayılmadan önce.</p>
+          </div>
+        </div>
+
+      </div><!-- /comparison -->
+
+    </div><!-- /safe-zone -->
+
+    <!-- Logo — dark version for white bg, outside safe zone -->
+    <div class="logo-bottom animate" style="animation-delay:6.5s;">
+      <svg width="200" height="59" viewBox="0 0 1497 441" xmlns="http://www.w3.org/2000/svg" opacity="1">
+        <path fill="#0A0A0A" d="M199.5 407.5625C96.085938 407.5625 12.46875 323.945312 12.46875 220.53125C12.46875 117.117188 96.085938 33.5 199.5 33.5C302.914062 33.5 386.53125 117.117188 386.53125 220.53125C386.53125 323.945312 302.914062 407.5625 199.5 407.5625Z" fill-rule="evenodd"/>
+        <path stroke-linecap="round" transform="matrix(0.779297,0,0,0.779297,0.0000186701,21.031106)" fill="none" stroke-linejoin="round" d="M155.999997 292.000223C206.000003 350.00023 306.000016 350.00023 356.000023 292.000223" stroke="#FFFFFF" stroke-width="40" stroke-opacity="1" stroke-miterlimit="4"/>
+        <g transform="matrix(1,0,0,1,435,75)" fill="#0A0A0A" fill-opacity="1">
+          <g transform="translate(1.057548,226.525283)"><path d="M50.597656 0L88.246094 0L119.664062-110.789062L151.316406 0L188.964844 0L235.96875-167.863281L201.195312-167.863281L169.0625-43.40625L133.8125-167.863281L105.515625-167.863281L70.503906-43.40625L38.367188-167.863281L3.597656-167.863281Z"/></g>
+          <g transform="translate(235.82524,226.525283)"><path d="M80.8125-123.257812C64.746094-123.257812 52.277344-117.265625 45.082031-106.472656L45.082031-167.863281L14.148438-167.863281L14.148438 0L45.082031 0L45.082031-64.746094C45.082031-85.609375 56.355469-94.484375 71.460938-94.484375C85.371094-94.484375 95.203125-86.089844 95.203125-69.78125L95.203125 0L126.136719 0L126.136719-73.621094C126.136719-105.515625 106.234375-123.257812 80.8125-123.257812Z"/></g>
+          <g transform="translate(374.191867,226.525283)"><path d="M105.273438-119.902344L105.273438-105.753906C96.640625-116.542969 83.691406-123.257812 66.1875-123.257812C34.292969-123.257812 7.914062-95.683594 7.914062-59.949219C7.914062-24.21875 34.292969 3.355469 66.1875 3.355469C83.691406 3.355469 96.640625-3.355469 105.273438-14.148438L105.273438 0L136.207031 0L136.207031-119.902344ZM71.941406-26.136719C52.996094-26.136719 38.847656-39.808594 38.847656-59.949219C38.847656-80.09375 52.996094-93.761719 71.941406-93.761719C91.125-93.761719 105.273438-80.09375 105.273438-59.949219C105.273438-39.808594 91.125-26.136719 71.941406-26.136719Z"/></g>
+          <g transform="translate(524.30888,226.525283)"><path d="M82.730469-90.167969L82.730469-119.902344L55.632812-119.902344L55.632812-153.472656L24.699219-144.121094L24.699219-119.902344L3.835938-119.902344L3.835938-90.167969L24.699219-90.167969L24.699219-40.285156C24.699219-7.914062 39.328125 4.796875 82.730469 0L82.730469-28.058594C64.988281-27.097656 55.632812-27.335938 55.632812-40.285156L55.632812-90.167969Z"/></g>
+          <g transform="translate(616.633208,226.525283)"><path d="M126.617188-167.863281L3.117188-167.863281L3.117188-136.207031L48.199219-136.207031L48.199219 0L81.292969 0L81.292969-136.207031L126.617188-136.207031Z"/></g>
+          <g transform="translate(724.304968,226.525283)"><path d="M105.273438-119.902344L105.273438-105.753906C96.640625-116.542969 83.691406-123.257812 66.1875-123.257812C34.292969-123.257812 7.914062-95.683594 7.914062-59.949219C7.914062-24.21875 34.292969 3.355469 66.1875 3.355469C83.691406 3.355469 96.640625-3.355469 105.273438-14.148438L105.273438 0L136.207031 0L136.207031-119.902344ZM71.941406-26.136719C52.996094-26.136719 38.847656-39.808594 38.847656-59.949219C38.847656-80.09375 52.996094-93.761719 71.941406-93.761719C91.125-93.761719 105.273438-80.09375 105.273438-59.949219C105.273438-39.808594 91.125-26.136719 71.941406-26.136719Z"/></g>
+          <g transform="translate(874.422026,226.525283)"><path d="M14.148438 0L45.082031 0L45.082031-175.058594L14.148438-175.058594Z"/></g>
+          <g transform="translate(933.653474,226.525283)"><path d="M124.699219 0L75.058594-60.671875L123.257812-119.902344L86.328125-119.902344L45.082031-67.144531L45.082031-167.863281L14.148438-167.863281L14.148438 0L45.082031 0L45.082031-54.433594L88.726562 0Z"/></g>
+        </g>
+      </svg>
+    </div>
+
+  </div><!-- /canvas -->
+
+  <script>
+    async function downloadPNG() {
+      const btn = document.getElementById('download-btn');
+      btn.textContent = 'Hazırlanıyor...';
+      btn.disabled = true;
+
+      const animated = document.querySelectorAll('.animate');
+      animated.forEach(el => {
+        el.style.animation = 'none';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      });
+      await new Promise(r => setTimeout(r, 80));
+
+      const canvas = await html2canvas(document.getElementById('canvas'), {
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF',
+        width: 1080,
+        height: 1920,
+        scrollX: 0,
+        scrollY: 0,
+      });
+
+      animated.forEach(el => {
+        el.style.animation = '';
+        el.style.opacity = '';
+        el.style.transform = '';
+      });
+
+      const link = document.createElement('a');
+      link.download = 'post-referans-sistemi-2026-03-20.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      btn.textContent = '⬇ PNG olarak indir';
+      btn.disabled = false;
+    }
+
+    function exportMP4() {
+      const btn = document.getElementById('export-btn');
+      btn.disabled = true;
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,10,0.93);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:Inter,sans-serif;';
+      overlay.innerHTML = `
+        <div id="ov-title" style="font-size:20px;font-weight:700;color:#00C2A8;letter-spacing:-0.02em;">⚙ MP4 Hazırlanıyor...</div>
+        <div id="ov-log" style="font-size:13px;color:#888;max-width:440px;text-align:center;line-height:1.6;word-break:break-all;min-height:40px;"></div>
+        <div style="font-size:12px;color:#444;">Bu pencereyi kapatmayın · ~2 dakika sürebilir</div>
+      `;
+      document.body.appendChild(overlay);
+
+      const logEl = document.getElementById('ov-log');
+      const titleEl = document.getElementById('ov-title');
+
+      const es = new EventSource('http://localhost:3131/export?file=outputs%2Fpost-referans-sistemi-2026-03-20.html&buffer=3.0');
+
+      es.onmessage = (e) => {
+        const d = JSON.parse(e.data);
+        if (d.type === 'log') {
+          logEl.textContent = d.msg.replace(/\s+/g, ' ').trim();
+        } else if (d.type === 'done') {
+          es.close();
+          titleEl.textContent = '✓ MP4 Hazır!';
+          logEl.style.color = '#00C2A8';
+          logEl.textContent = 'İndirme başlıyor...';
+          setTimeout(() => {
+            window.location.href = 'http://localhost:3131/download?file=' + encodeURIComponent(d.file);
+            setTimeout(() => {
+              document.body.removeChild(overlay);
+              btn.disabled = false;
+            }, 2000);
+          }, 600);
+        } else if (d.type === 'error') {
+          es.close();
+          titleEl.style.color = '#EF4444';
+          titleEl.textContent = '✗ Export Başarısız';
+          logEl.style.color = '#EF4444';
+          logEl.textContent = d.msg;
+          setTimeout(() => { document.body.removeChild(overlay); btn.disabled = false; }, 4000);
+        }
+      };
+
+      es.onerror = () => {
+        es.close();
+        titleEl.style.color = '#EF4444';
+        titleEl.textContent = '✗ Bağlantı Hatası';
+        logEl.style.color = '#EF4444';
+        logEl.textContent = 'Sunucuya bağlanılamadı. Terminalde: node .claude/server.js';
+        setTimeout(() => { document.body.removeChild(overlay); btn.disabled = false; }, 4000);
+      };
+    }
+  </script>
+</body>
+</html>

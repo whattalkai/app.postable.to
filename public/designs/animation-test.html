@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080">
+  <title>WhatTalk — Animation Test</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    :root {
+      --black:     #0A0A0A;
+      --teal:      #00C2A8;
+      --teal-dim:  rgba(0,194,168,0.12);
+      --teal-glow: rgba(0,194,168,0.25);
+      --purple:    #7855FF;
+      --white:     #FFFFFF;
+      --grey:      #888888;
+      --border:    #1E1E1E;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 1080px;
+      height: 1920px;
+      background: var(--black);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Background — appears instantly, no animation ── */
+    .bg-blob-1 {
+      position: absolute;
+      width: 900px; height: 900px;
+      background: radial-gradient(circle, rgba(120,85,255,0.20) 0%, transparent 65%);
+      top: -200px; left: -300px;
+      filter: blur(100px);
+      pointer-events: none;
+    }
+    .bg-blob-2 {
+      position: absolute;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(0,194,168,0.15) 0%, transparent 65%);
+      bottom: 300px; right: -200px;
+      filter: blur(110px);
+      pointer-events: none;
+    }
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 80px 80px;
+      pointer-events: none;
+    }
+
+    /* ── Animation keyframe ── */
+    @keyframes revealUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate {
+      opacity: 0;
+      animation: revealUp 0.5s ease-out forwards;
+    }
+
+    /* ── Safe zone ── */
+    .safe-zone {
+      position: absolute;
+      top: 285px;
+      left: 0;
+      width: 1080px;
+      height: 1350px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 56px;
+      padding: 80px 100px;
+    }
+
+    /* ── Element 1: Logo ── */
+    .logo-wrap {
+      animation-delay: 0s;
+    }
+
+    /* ── Element 2: Headline ── */
+    .headline {
+      text-align: center;
+      animation-delay: 0.8s;
+    }
+    .headline h1 {
+      font-size: 80px;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+    .headline h1 em {
+      font-style: italic;
+      color: var(--teal);
+    }
+
+    /* ── Element 3: Subtext ── */
+    .subtext {
+      text-align: center;
+      animation-delay: 1.6s;
+    }
+    .subtext p {
+      font-size: 30px;
+      font-weight: 400;
+      color: var(--grey);
+      line-height: 1.55;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Element 4: CTA ── */
+    .cta-wrap {
+      animation-delay: 2.4s;
+    }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--teal);
+      color: var(--black);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      padding: 28px 60px;
+      border-radius: 100px;
+    }
+
+    /* ── Logo bottom ── */
+    .logo-bottom {
+      position: absolute;
+      bottom: 60px;
+      left: 0;
+      width: 1080px;
+      display: flex;
+      justify-content: center;
+      animation-delay: 2.4s;
+    }
+  </style>
+  <style>
+    #export-btn {
+      display: block;
+      width: 1080px;
+      padding: 18px;
+      background: #7855FF;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+    #export-btn:hover { background: #6644ee; }
+    #export-btn:disabled { background: #444; cursor: wait; }
+  </style>
+</head>
+<body>
+  <button id="export-btn" onclick="exportMP4()">⬇ MP4 olarak indir</button>
+  <script>
+    function exportMP4() {
+      const btn = document.getElementById('export-btn');
+      btn.disabled = true;
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,10,0.93);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:Inter,sans-serif;';
+      overlay.innerHTML = `
+        <div id="ov-title" style="font-size:20px;font-weight:700;color:#00C2A8;letter-spacing:-0.02em;">⚙ MP4 Hazırlanıyor...</div>
+        <div id="ov-log" style="font-size:13px;color:#888;max-width:440px;text-align:center;line-height:1.6;word-break:break-all;min-height:40px;"></div>
+        <div style="font-size:12px;color:#444;">Bu pencereyi kapatmayın · ~2 dakika sürebilir</div>
+      `;
+      document.body.appendChild(overlay);
+
+      const logEl = document.getElementById('ov-log');
+      const titleEl = document.getElementById('ov-title');
+
+      const es = new EventSource('http://localhost:3131/export?file=outputs%2Fanimation-test.html');
+
+      es.onmessage = (e) => {
+        const d = JSON.parse(e.data);
+        if (d.type === 'log') {
+          logEl.textContent = d.msg.replace(/\s+/g, ' ').trim();
+        } else if (d.type === 'done') {
+          es.close();
+          titleEl.textContent = '✓ MP4 Hazır!';
+          logEl.style.color = '#00C2A8';
+          logEl.textContent = 'İndirme başlıyor...';
+          setTimeout(() => {
+            window.location.href = 'http://localhost:3131/download?file=' + encodeURIComponent(d.file);
+            setTimeout(() => {
+              document.body.removeChild(overlay);
+              btn.disabled = false;
+            }, 2000);
+          }, 600);
+        } else if (d.type === 'error') {
+          es.close();
+          titleEl.style.color = '#EF4444';
+          titleEl.textContent = '✗ Export Başarısız';
+          logEl.style.color = '#EF4444';
+          logEl.textContent = d.msg;
+          setTimeout(() => { document.body.removeChild(overlay); btn.disabled = false; }, 4000);
+        }
+      };
+
+      es.onerror = () => {
+        es.close();
+        titleEl.style.color = '#EF4444';
+        titleEl.textContent = '✗ Bağlantı Hatası';
+        logEl.style.color = '#EF4444';
+        logEl.textContent = 'Sunucuya bağlanılamadı. Terminalde: node .claude/server.js';
+        setTimeout(() => { document.body.removeChild(overlay); btn.disabled = false; }, 4000);
+      };
+    }
+  </script>
+
+  <!-- Background: instant, no animation -->
+  <div class="bg-blob-1"></div>
+  <div class="bg-blob-2"></div>
+  <div class="bg-grid"></div>
+
+  <div class="safe-zone">
+
+    <!-- Element 1: Logo (delay 0s) -->
+    <div class="animate logo-wrap" style="animation-delay: 0s;">
+      <svg width="220" height="65" viewBox="0 0 1497 441" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#ffffff" d="M199.5 407.5625C96.085938 407.5625 12.46875 323.945312 12.46875 220.53125C12.46875 117.117188 96.085938 33.5 199.5 33.5C302.914062 33.5 386.53125 117.117188 386.53125 220.53125C386.53125 323.945312 302.914062 407.5625 199.5 407.5625Z" fill-rule="evenodd"/>
+        <path stroke-linecap="round" transform="matrix(0.779297,0,0,0.779297,0.0000186701,21.031106)" fill="none" stroke-linejoin="round" d="M155.999997 292.000223C206.000003 350.00023 306.000016 350.00023 356.000023 292.000223" stroke="#000000" stroke-width="40" stroke-opacity="1" stroke-miterlimit="4"/>
+        <g transform="matrix(1,0,0,1,435,75)" fill="#ffffff" fill-opacity="1">
+          <g transform="translate(1.057548,226.525283)"><path d="M50.597656 0L88.246094 0L119.664062-110.789062L151.316406 0L188.964844 0L235.96875-167.863281L201.195312-167.863281L169.0625-43.40625L133.8125-167.863281L105.515625-167.863281L70.503906-43.40625L38.367188-167.863281L3.597656-167.863281Z"/></g>
+          <g transform="translate(235.82524,226.525283)"><path d="M80.8125-123.257812C64.746094-123.257812 52.277344-117.265625 45.082031-106.472656L45.082031-167.863281L14.148438-167.863281L14.148438 0L45.082031 0L45.082031-64.746094C45.082031-85.609375 56.355469-94.484375 71.460938-94.484375C85.371094-94.484375 95.203125-86.089844 95.203125-69.78125L95.203125 0L126.136719 0L126.136719-73.621094C126.136719-105.515625 106.234375-123.257812 80.8125-123.257812Z"/></g>
+          <g transform="translate(374.191867,226.525283)"><path d="M105.273438-119.902344L105.273438-105.753906C96.640625-116.542969 83.691406-123.257812 66.1875-123.257812C34.292969-123.257812 7.914062-95.683594 7.914062-59.949219C7.914062-24.21875 34.292969 3.355469 66.1875 3.355469C83.691406 3.355469 96.640625-3.355469 105.273438-14.148438L105.273438 0L136.207031 0L136.207031-119.902344ZM71.941406-26.136719C52.996094-26.136719 38.847656-39.808594 38.847656-59.949219C38.847656-80.09375 52.996094-93.761719 71.941406-93.761719C91.125-93.761719 105.273438-80.09375 105.273438-59.949219C105.273438-39.808594 91.125-26.136719 71.941406-26.136719Z"/></g>
+          <g transform="translate(524.30888,226.525283)"><path d="M82.730469-90.167969L82.730469-119.902344L55.632812-119.902344L55.632812-153.472656L24.699219-144.121094L24.699219-119.902344L3.835938-119.902344L3.835938-90.167969L24.699219-90.167969L24.699219-40.285156C24.699219-7.914062 39.328125 4.796875 82.730469 0L82.730469-28.058594C64.988281-27.097656 55.632812-27.335938 55.632812-40.285156L55.632812-90.167969Z"/></g>
+          <g transform="translate(616.633208,226.525283)"><path d="M126.617188-167.863281L3.117188-167.863281L3.117188-136.207031L48.199219-136.207031L48.199219 0L81.292969 0L81.292969-136.207031L126.617188-136.207031Z"/></g>
+          <g transform="translate(724.304968,226.525283)"><path d="M105.273438-119.902344L105.273438-105.753906C96.640625-116.542969 83.691406-123.257812 66.1875-123.257812C34.292969-123.257812 7.914062-95.683594 7.914062-59.949219C7.914062-24.21875 34.292969 3.355469 66.1875 3.355469C83.691406 3.355469 96.640625-3.355469 105.273438-14.148438L105.273438 0L136.207031 0L136.207031-119.902344ZM71.941406-26.136719C52.996094-26.136719 38.847656-39.808594 38.847656-59.949219C38.847656-80.09375 52.996094-93.761719 71.941406-93.761719C91.125-93.761719 105.273438-80.09375 105.273438-59.949219C105.273438-39.808594 91.125-26.136719 71.941406-26.136719Z"/></g>
+          <g transform="translate(874.422026,226.525283)"><path d="M14.148438 0L45.082031 0L45.082031-175.058594L14.148438-175.058594Z"/></g>
+          <g transform="translate(933.653474,226.525283)"><path d="M124.699219 0L75.058594-60.671875L123.257812-119.902344L86.328125-119.902344L45.082031-67.144531L45.082031-167.863281L14.148438-167.863281L14.148438 0L45.082031 0L45.082031-54.433594L88.726562 0Z"/></g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Element 2: Headline (delay 0.8s) -->
+    <div class="headline animate" style="animation-delay: 0.8s;">
+      <h1>Her Memnun Müşteri<br><em>3 Yeni Müşteri</em> Getirebilir.</h1>
+    </div>
+
+    <!-- Element 3: Subtext (delay 1.6s) -->
+    <div class="subtext animate" style="animation-delay: 1.6s;">
+      <p>Yapay zeka asistanınız Elif, hizmet sonrası<br>her müşteriyi arar — memnun olanlara<br>referans kampanyasını anlatır.</p>
+    </div>
+
+    <!-- Element 4: CTA (delay 2.4s) -->
+    <div class="cta-wrap animate" style="animation-delay: 2.4s;">
+      <div class="cta">
+        Ücretsiz Deneyin
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+          <path d="M5 12h14M12 5l7 7-7 7" stroke="#0A0A0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Logo bottom — animates with last element -->
+  <div class="logo-bottom animate" style="animation-delay: 2.4s;">
+    <svg width="200" height="59" viewBox="0 0 1497 441" xmlns="http://www.w3.org/2000/svg" opacity="0.85">
+      <path fill="#ffffff" d="M199.5 407.5625C96.085938 407.5625 12.46875 323.945312 12.46875 220.53125C12.46875 117.117188 96.085938 33.5 199.5 33.5C302.914062 33.5 386.53125 117.117188 386.53125 220.53125C386.53125 323.945312 302.914062 407.5625 199.5 407.5625Z" fill-rule="evenodd"/>
+      <path stroke-linecap="round" transform="matrix(0.779297,0,0,0.779297,0.0000186701,21.031106)" fill="none" stroke-linejoin="round" d="M155.999997 292.000223C206.000003 350.00023 306.000016 350.00023 356.000023 292.000223" stroke="#000000" stroke-width="40" stroke-opacity="1" stroke-miterlimit="4"/>
+      <g transform="matrix(1,0,0,1,435,75)" fill="#ffffff" fill-opacity="1">
+        <g transform="translate(1.057548,226.525283)"><path d="M50.597656 0L88.246094 0L119.664062-110.789062L151.316406 0L188.964844 0L235.96875-167.863281L201.195312-167.863281L169.0625-43.40625L133.8125-167.863281L105.515625-167.863281L70.503906-43.40625L38.367188-167.863281L3.597656-167.863281Z"/></g>
+        <g transform="translate(235.82524,226.525283)"><path d="M80.8125-123.257812C64.746094-123.257812 52.277344-117.265625 45.082031-106.472656L45.082031-167.863281L14.148438-167.863281L14.148438 0L45.082031 0L45.082031-64.746094C45.082031-85.609375 56.355469-94.484375 71.460938-94.484375C85.371094-94.484375 95.203125-86.089844 95.203125-69.78125L95.203125 0L126.136719 0L126.136719-73.621094C126.136719-105.515625 106.234375-123.257812 80.8125-123.257812Z"/></g>
+        <g transform="translate(374.191867,226.525283)"><path d="M105.273438-119.902344L105.273438-105.753906C96.640625-116.542969 83.691406-123.257812 66.1875-123.257812C34.292969-123.257812 7.914062-95.683594 7.914062-59.949219C7.914062-24.21875 34.292969 3.355469 66.1875 3.355469C83.691406 3.355469 96.640625-3.355469 105.273438-14.148438L105.273438 0L136.207031 0L136.207031-119.902344ZM71.941406-26.136719C52.996094-26.136719 38.847656-39.808594 38.847656-59.949219C38.847656-80.09375 52.996094-93.761719 71.941406-93.761719C91.125-93.761719 105.273438-80.09375 105.273438-59.949219C105.273438-39.808594 91.125-26.136719 71.941406-26.136719Z"/></g>
+        <g transform="translate(524.30888,226.525283)"><path d="M82.730469-90.167969L82.730469-119.902344L55.632812-119.902344L55.632812-153.472656L24.699219-144.121094L24.699219-119.902344L3.835938-119.902344L3.835938-90.167969L24.699219-90.167969L24.699219-40.285156C24.699219-7.914062 39.328125 4.796875 82.730469 0L82.730469-28.058594C64.988281-27.097656 55.632812-27.335938 55.632812-40.285156L55.632812-90.167969Z"/></g>
+        <g transform="translate(616.633208,226.525283)"><path d="M126.617188-167.863281L3.117188-167.863281L3.117188-136.207031L48.199219-136.207031L48.199219 0L81.292969 0L81.292969-136.207031L126.617188-136.207031Z"/></g>
+        <g transform="translate(724.304968,226.525283)"><path d="M105.273438-119.902344L105.273438-105.753906C96.640625-116.542969 83.691406-123.257812 66.1875-123.257812C34.292969-123.257812 7.914062-95.683594 7.914062-59.949219C7.914062-24.21875 34.292969 3.355469 66.1875 3.355469C83.691406 3.355469 96.640625-3.355469 105.273438-14.148438L105.273438 0L136.207031 0L136.207031-119.902344ZM71.941406-26.136719C52.996094-26.136719 38.847656-39.808594 38.847656-59.949219C38.847656-80.09375 52.996094-93.761719 71.941406-93.761719C91.125-93.761719 105.273438-80.09375 105.273438-59.949219C105.273438-39.808594 91.125-26.136719 71.941406-26.136719Z"/></g>
+        <g transform="translate(874.422026,226.525283)"><path d="M14.148438 0L45.082031 0L45.082031-175.058594L14.148438-175.058594Z"/></g>
+        <g transform="translate(933.653474,226.525283)"><path d="M124.699219 0L75.058594-60.671875L123.257812-119.902344L86.328125-119.902344L45.082031-67.144531L45.082031-167.863281L14.148438-167.863281L14.148438 0L45.082031 0L45.082031-54.433594L88.726562 0Z"/></g>
+      </g>
+    </svg>
+  </div>
+
+</body>
+</html>

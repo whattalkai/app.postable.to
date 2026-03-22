@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatTalk Studio</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --teal:         #ffffff;
+  --teal-dim:     rgba(255,255,255,0.05);
+  --teal-border:  rgba(255,255,255,0.16);
+  --bg:           #0c0c0c;
+  --panel:        #141414;
+  --panel2:       #1c1c1c;
+  --panel3:       #222;
+  --border:       rgba(255,255,255,0.07);
+  --text:         #e6e6e6;
+  --muted:        #6b6b6b;
+  --muted2:       #3d3d3d;
+  --hover:        rgba(255,255,255,0.04);
+  --list-w:       196px;
+  --chat-w:       380px;
+  --caption-w:    280px;
+  --topbar-h:     50px;
+}
+
+html, body { height: 100%; overflow: hidden; font-family: 'Inter', -apple-system, sans-serif; color: var(--text); background: var(--bg); }
+body { display: flex; flex-direction: column; }
+
+/* ══════════════════════════════
+   TOP BAR
+══════════════════════════════ */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 12px 0 10px;
+  gap: 6px; flex-shrink: 0; z-index: 100;
+}
+
+.panel-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; border: none; background: transparent;
+  cursor: pointer; color: var(--muted); transition: all 0.15s; flex-shrink: 0;
+}
+.panel-btn:hover  { background: var(--hover); color: var(--text); }
+.panel-btn.active { color: var(--teal); }
+
+.logo { display: flex; align-items: center; gap: 7px; margin: 0 4px; }
+.logo-icon {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: #111; border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.logo-text  { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+.logo-badge {
+  font-size: 9px; font-weight: 700; color: var(--teal);
+  background: var(--teal-dim); border: 1px solid var(--teal-border);
+  padding: 1.5px 6px; border-radius: 4px; letter-spacing: 0.05em;
+}
+
+.tb-div    { width: 1px; height: 16px; background: var(--border); margin: 0 2px; }
+.tb-file   { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.tb-spacer { flex: 1; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+  padding: 5px 11px; border-radius: 6px; border: none; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-ghost:hover { border-color: rgba(255,255,255,0.18); color: var(--text); background: var(--hover); }
+.btn-solid { background: var(--panel2); border: 1px solid var(--border); color: var(--text); }
+.btn-solid:hover { background: var(--panel3); }
+
+/* ══════════════════════════════
+   MAIN ROW — 4 columns
+══════════════════════════════ */
+.main-row { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+/* ══════════════════════════════
+   COL 1 — POST LIST (sidebar)
+══════════════════════════════ */
+.post-sidebar {
+  width: var(--list-w); flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: width 0.22s ease;
+}
+.post-sidebar.collapsed { width: 0; overflow: hidden; border-right: none; }
+
+.sidebar-header {
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sidebar-title { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+.sidebar-count {
+  font-size: 9.5px; font-weight: 600; color: var(--muted);
+  background: var(--panel2); border: 1px solid var(--border);
+  padding: 1px 6px; border-radius: 6px;
+}
+
+.post-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+.post-list::-webkit-scrollbar { width: 3px; }
+.post-list::-webkit-scrollbar-thumb { background: var(--panel3); border-radius: 3px; }
+
+.post-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 12px 8px 14px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.12s;
+}
+.post-item:hover { background: var(--hover); }
+.post-item.active { background: var(--teal-dim); border-left-color: var(--teal); }
+
+.post-info { flex: 1; min-width: 0; }
+.post-name {
+  font-size: 11.5px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35;
+}
+.post-item.active .post-name { color: var(--teal); }
+.post-meta { font-size: 10px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+.post-type {
+  font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.type-story { background: rgba(255,255,255,0.07); color: var(--muted); }
+.type-post  { background: rgba(255,255,255,0.07); color: var(--muted); }
+
+/* ══════════════════════════════
+   COL 2 — CHAT PANEL
+══════════════════════════════ */
+.chat-panel {
+  width: var(--chat-w); flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: width 0.22s ease;
+}
+.chat-panel.collapsed { width: 0; overflow: hidden; border-right: none; }
+
+.chat-header {
+  padding: 11px 14px 9px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; gap: 7px;
+}
+.chat-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 2px var(--teal-dim); flex-shrink: 0; }
+.chat-title { font-size: 12px; font-weight: 700; color: var(--text); }
+.chat-sub   { font-size: 9.5px; color: var(--muted); }
+
+.chat-messages {
+  flex: 1; overflow-y: auto;
+  padding: 12px 12px 6px;
+  display: flex; flex-direction: column; gap: 10px;
+  scroll-behavior: smooth;
+}
+.chat-messages::-webkit-scrollbar { width: 3px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--panel3); border-radius: 3px; }
+
+.msg { display: flex; flex-direction: column; gap: 3px; max-width: 90%; }
+.msg.ai   { align-self: flex-start; }
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg-bubble {
+  padding: 8px 11px; border-radius: 11px;
+  font-size: 12px; line-height: 1.55;
+}
+.msg.ai   .msg-bubble { background: var(--panel2); color: var(--text); border-bottom-left-radius: 3px; }
+.msg.user .msg-bubble { background: var(--teal); color: #fff; border-bottom-right-radius: 3px; }
+.msg-time { font-size: 9.5px; color: var(--muted2); padding: 0 2px; }
+
+.typing-wrap { display: none; padding: 0 12px 6px; }
+.typing-wrap.show { display: flex; }
+.typing-indicator {
+  display: flex; align-items: center; gap: 4px;
+  padding: 8px 12px; background: var(--panel2);
+  border-radius: 11px; border-bottom-left-radius: 3px; width: fit-content;
+}
+.typing-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); animation: bounce 1.2s infinite; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
+
+.chat-input-area {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.chat-input-box {
+  display: flex; align-items: flex-end; gap: 7px;
+  background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 7px 7px 7px 12px;
+  transition: border-color 0.15s;
+}
+.chat-input-box:focus-within { border-color: var(--teal-border); }
+.chat-textarea {
+  flex: 1; font-family: 'Inter', sans-serif;
+  font-size: 12px; color: var(--text); background: transparent;
+  border: none; outline: none; resize: none;
+  min-height: 30px; max-height: 80px; line-height: 1.5; padding: 0;
+}
+.chat-textarea::placeholder { color: var(--muted2); }
+.send-btn {
+  width: 30px; height: 30px; border-radius: 7px;
+  background: #fff; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.send-btn:hover { background: #e0e0e0; }
+.chat-hint { font-size: 9.5px; color: var(--muted2); text-align: center; margin-top: 7px; }
+
+/* ══════════════════════════════
+   COL 3 — 9:16 PREVIEW (centered)
+══════════════════════════════ */
+.preview-col {
+  flex: 1; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative; min-width: 0;
+}
+.creative-wrap {
+  height: 100%; aspect-ratio: 9 / 16;
+  position: relative; overflow: hidden; flex-shrink: 0;
+}
+.creative-wrap iframe {
+  position: absolute; top: 0; left: 0;
+  width: 1080px; height: 1920px;
+  border: none; transform-origin: top left;
+  pointer-events: none; display: block;
+}
+.preview-label {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.55); color: rgba(255,255,255,0.35);
+  font-size: 9.5px; font-weight: 500; padding: 3px 10px; border-radius: 20px;
+  backdrop-filter: blur(8px); white-space: nowrap; pointer-events: none;
+}
+
+/* ══════════════════════════════
+   COL 4 — CAPTION PANEL
+══════════════════════════════ */
+.caption-panel {
+  width: var(--caption-w); flex-shrink: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: width 0.22s ease;
+}
+.caption-panel.collapsed { width: 0; overflow: hidden; border-left: none; }
+
+.cc-header {
+  padding: 11px 13px 9px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.cc-hrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cc-title { font-size: 12px; font-weight: 700; color: var(--text); }
+.cc-badge {
+  font-size: 8.5px; font-weight: 700; color: var(--teal);
+  background: var(--teal-dim); border: 1px solid var(--teal-border);
+  padding: 1.5px 6px; border-radius: 4px; letter-spacing: 0.05em;
+}
+.cc-ig { display: flex; align-items: center; gap: 7px; }
+.cc-ig-av {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #111; border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.cc-ig-name   { font-size: 10.5px; font-weight: 700; color: var(--text); }
+.cc-ig-handle { font-size: 9.5px; color: var(--muted); }
+
+.cc-body { flex: 1; padding: 10px 13px; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; }
+.cc-body::-webkit-scrollbar { width: 3px; }
+.cc-body::-webkit-scrollbar-thumb { background: var(--panel3); border-radius: 3px; }
+.cc-label { font-size: 9.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+
+.cc-textarea {
+  font-family: 'Inter', sans-serif; font-size: 11.5px; line-height: 1.6; color: var(--text);
+  background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px;
+  resize: none; outline: none; width: 100%;
+  overflow: hidden; min-height: 60px;
+  transition: border-color 0.15s;
+}
+.cc-textarea:focus { border-color: var(--teal-border); }
+.cc-char { font-size: 9.5px; color: var(--muted2); text-align: right; }
+
+.cc-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.cc-tag {
+  font-size: 10px; font-weight: 500; color: var(--teal);
+  background: var(--teal-dim); border: 1px solid var(--teal-border);
+  padding: 2px 8px; border-radius: 20px; cursor: pointer; transition: background 0.12s;
+}
+.cc-tag:hover { background: rgba(0,194,168,0.2); }
+
+.cc-footer {
+  padding: 9px 13px 12px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
+}
+.cc-row { display: flex; gap: 5px; }
+.cc-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 600;
+  padding: 7px; border-radius: 7px; border: none; cursor: pointer; transition: all 0.15s;
+}
+.cc-btn-ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+.cc-btn-ghost:hover { background: var(--panel3); }
+.cc-btn-gen   { background: #fff; color: #0c0c0c; }
+.cc-btn-gen:hover { background: #e8e8e8; }
+.cc-note { font-size: 9.5px; color: var(--muted2); text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ══ TOP BAR ══ -->
+<div class="topbar">
+
+  <!-- Left: toggle list -->
+  <button class="panel-btn active" id="listToggle" onclick="toggleList()" title="Tasarım listesi">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="1" width="14" height="14" rx="2.5" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M5.5 1v14" stroke="currentColor" stroke-width="1.3"/>
+    </svg>
+  </button>
+
+  <!-- Left: toggle chat -->
+  <button class="panel-btn active" id="chatToggle" onclick="toggleChat()" title="Sohbet paneli">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- Logo -->
+  <div class="tb-div"></div>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" fill="none"/>
+        <path d="M8 13 Q12 17 16 13" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    <span class="logo-text">WhatTalk</span>
+    <span class="logo-badge">STUDIO</span>
+  </div>
+
+  <div class="tb-div"></div>
+  <span class="tb-file" id="topbarFile">story-erken-donusen</span>
+
+  <div class="tb-spacer"></div>
+
+  <!-- Right: toggle caption -->
+  <button class="panel-btn active" id="captionToggle" onclick="toggleCaption()" title="Caption paneli">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="1" width="14" height="14" rx="2.5" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M10.5 1v14" stroke="currentColor" stroke-width="1.3"/>
+    </svg>
+  </button>
+
+  <div class="tb-div"></div>
+
+  <button class="btn btn-ghost" onclick="downloadPng()">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="2"/>
+      <polyline points="21 15 16 10 5 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    PNG
+  </button>
+  <button class="btn btn-solid" onclick="downloadMp4()">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+      <polygon points="23 7 16 12 23 17 23 7" fill="currentColor"/>
+      <rect x="1" y="5" width="15" height="14" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>
+    MP4
+  </button>
+
+</div>
+
+<!-- ══ MAIN ROW ══ -->
+<div class="main-row">
+
+  <!-- ── COL 1: POST LIST ── -->
+  <div class="post-sidebar" id="postSidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Tasarımlar</span>
+      <button onclick="newDesign()" title="Yeni tasarım" style="
+        width:22px; height:22px; border-radius:5px; border:none;
+        background:transparent; color:var(--muted); cursor:pointer;
+        display:flex; align-items:center; justify-content:center;
+        transition:background 0.15s, color 0.15s; flex-shrink:0;
+      " onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.color='#fff'"
+         onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="post-list">
+
+      <div class="post-item active" data-file="story-erken-donusen-2026-03-21.html" onclick="selectPost(this)">
+        <div class="post-info">
+          <div class="post-name">Erken Dönüşen</div>
+          <div class="post-meta"><span class="post-type type-story">Story</span>21 Mar</div>
+        </div>
+      </div>
+
+      <div class="post-item" data-file="story-elif-agent-2026-03-20.html" onclick="selectPost(this)">
+        <div class="post-info">
+          <div class="post-name">Elif Agent</div>
+          <div class="post-meta"><span class="post-type type-story">Story</span>20 Mar</div>
+        </div>
+      </div>
+
+      <div class="post-item" data-file="post-referans-sistemi-2026-03-20.html" onclick="selectPost(this)">
+        <div class="post-info">
+          <div class="post-name">Referans Sistemi</div>
+          <div class="post-meta"><span class="post-type type-post">Post</span>20 Mar</div>
+        </div>
+      </div>
+
+      <div class="post-item" data-file="post-madelyn-marcel-referans-2026-03-19.html" onclick="selectPost(this)">
+        <div class="post-info">
+          <div class="post-name">Madelyn Marcel</div>
+          <div class="post-meta"><span class="post-type type-post">Post</span>19 Mar</div>
+        </div>
+      </div>
+
+      <div class="post-item" data-file="story-madelyn-marcel-sonuclar-2026-03-19.html" onclick="selectPost(this)">
+        <div class="post-info">
+          <div class="post-name">Madelyn Sonuçlar</div>
+          <div class="post-meta"><span class="post-type type-story">Story</span>19 Mar</div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /post-sidebar -->
+
+  <!-- ── COL 2: CHAT ── -->
+  <div class="chat-panel" id="chatPanel">
+
+    <div class="chat-header">
+      <div class="chat-dot"></div>
+      <div>
+        <div class="chat-title">Yapay Zeka Asistan</div>
+        <div class="chat-sub">WhatTalk.ai · İçerik Stüdyosu</div>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg ai">
+        <div class="msg-bubble">Merhaba! Soldan bir tasarım seç veya buraya yaz.<br><br>• "elif tasarımını göster"<br>• "madelyn sonuçlarını aç"<br>• "caption'ı daha kısa yap"</div>
+        <div class="msg-time">09:41</div>
+      </div>
+    </div>
+
+    <div class="typing-wrap" id="typingWrap">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <div class="chat-input-box">
+        <textarea class="chat-textarea" id="chatInput"
+          placeholder="Tasarım değiştir veya caption üret…"
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <path d="M22 2L11 13" stroke="#0c0c0c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 2L15 22l-4-9-9-4 20-7z" stroke="#0c0c0c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="chat-hint">Enter gönderin · Shift+Enter satır atlayın</div>
+    </div>
+
+  </div><!-- /chat-panel -->
+
+  <!-- ── COL 3: PREVIEW ── -->
+  <div class="preview-col">
+    <div class="creative-wrap" id="creativeWrap">
+      <iframe id="fr" src="story-erken-donusen-2026-03-21.html" scrolling="no" onload="onFrameLoad(this)"></iframe>
+    </div>
+  </div>
+
+  <!-- ── COL 4: CAPTION ── -->
+  <div class="caption-panel" id="captionPanel">
+
+    <div class="cc-header">
+      <div class="cc-hrow">
+        <div class="cc-title">Caption</div>
+        <div class="cc-badge">✦ YAPAY ZEKA</div>
+      </div>
+      <div class="cc-ig">
+        <div class="cc-ig-av">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" fill="none"/>
+            <path d="M8 13 Q12 17 16 13" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+        <div>
+          <div class="cc-ig-name">whattalk.ai_turkce</div>
+          <div class="cc-ig-handle">WhatTalk.ai · Yapay Zeka</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cc-body">
+      <div>
+        <div class="cc-label" style="margin-bottom:5px">Gönderi Metni</div>
+        <textarea class="cc-textarea" id="captionText" oninput="updateCharCount()"
+>Güzellik sektöründe her şey değişti — ama bir şey değişmedi:
+
+Erken adapte olan kazanır. 📈
+
+1990'larda bilgisayarı benimseyen salonlar öne geçti.
+2000'lerde internet, 2010'larda Instagram.
+
+Şimdi sıra Yapay Zeka'da.
+
+Elif sizin için 7/24 müşteri takibi yapıyor, referans topluyor, kayıpları önlüyor.
+
+Rakibiniz başlamadan siz başlayın. 💡
+
+whattalk.ai ile tanışın 👇</textarea>
+        <div class="cc-char"><span id="charCount">0</span> / 2.200</div>
+      </div>
+      <div>
+        <div class="cc-label" style="margin-bottom:5px">Hashtag'ler</div>
+        <div class="cc-tags" id="tagList">
+          <span class="cc-tag">#whattalk</span>
+          <span class="cc-tag">#yapayzekaasistan</span>
+          <span class="cc-tag">#güzellikmerkezi</span>
+          <span class="cc-tag">#elif</span>
+          <span class="cc-tag">#dijitaldönüşüm</span>
+          <span class="cc-tag">#salonmarketing</span>
+          <span class="cc-tag">#müşterideneyimi</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cc-footer">
+      <div class="cc-row">
+        <button class="cc-btn cc-btn-gen" onclick="regenerateCaption()">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Yeniden Üret
+        </button>
+        <button class="cc-btn cc-btn-ghost" onclick="copyCaption()">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+            <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Kopyala
+        </button>
+      </div>
+      <div class="cc-note">Metni doğrudan düzenleyebilirsiniz</div>
+    </div>
+
+  </div><!-- /caption-panel -->
+
+</div><!-- /main-row -->
+
+<script>
+/* ── New Design ── */
+let newCount = 0;
+function newDesign() {
+  newCount++;
+  const list = document.querySelector('.post-list');
+  const item = document.createElement('div');
+  item.className = 'post-item';
+  item.dataset.file = '';
+  item.innerHTML = `
+    <div class="post-info">
+      <div class="post-name">Yeni Tasarım ${newCount}</div>
+      <div class="post-meta"><span class="post-type type-story">Yeni</span>Bugün</div>
+    </div>`;
+  item.onclick = () => {
+    document.querySelectorAll('.post-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    addAiMessage('Ne yapmak istiyorsun? Örn:\n• "Elif agent için yeni bir story tasarla"\n• "Referans kampanyası için post yap"');
+    document.getElementById('chatInput').focus();
+  };
+  list.appendChild(item);
+  document.querySelectorAll('.post-item').forEach(i => i.classList.remove('active'));
+  item.classList.add('active');
+  item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  addAiMessage('Yeni tasarım oluşturuldu. Ne yapmak istiyorsun? Örn:\n• "Elif agent için yeni bir story tasarla"\n• "Referans kampanyası için post yap"');
+  document.getElementById('chatInput').focus();
+}
+
+/* ── Scale ── */
+function applyScale(frame) {
+  const wrap = document.getElementById('creativeWrap');
+  if (!wrap) return;
+  const r = wrap.getBoundingClientRect();
+  frame.style.width  = '1080px';
+  frame.style.height = '1920px';
+  frame.style.transform = `scale(${r.width / 1080})`;
+}
+function hideBtn(frame) {
+  try {
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    ['export-btn','download-btn','export-overlay'].forEach(id => {
+      const el = doc.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  } catch(e) {}
+}
+function onFrameLoad(frame) { applyScale(frame); hideBtn(frame); }
+window.addEventListener('resize', () => { const fr = document.getElementById('fr'); if (fr) applyScale(fr); });
+
+/* ── Panel toggles ── */
+function reScale() { setTimeout(() => { const fr = document.getElementById('fr'); if (fr) applyScale(fr); }, 240); }
+
+function toggleList() {
+  document.getElementById('postSidebar').classList.toggle('collapsed');
+  document.getElementById('listToggle').classList.toggle('active');
+  reScale();
+}
+function toggleChat() {
+  document.getElementById('chatPanel').classList.toggle('collapsed');
+  document.getElementById('chatToggle').classList.toggle('active');
+  reScale();
+}
+function toggleCaption() {
+  document.getElementById('captionPanel').classList.toggle('collapsed');
+  document.getElementById('captionToggle').classList.toggle('active');
+  reScale();
+}
+
+/* ── Post data ── */
+const captions = {
+  'story-erken-donusen-2026-03-21.html': {
+    text: `Güzellik sektöründe her şey değişti — ama bir şey değişmedi:\n\nErken adapte olan kazanır. 📈\n\n1990'larda bilgisayarı benimseyen salonlar öne geçti.\n2000'lerde internet, 2010'larda Instagram.\n\nŞimdi sıra Yapay Zeka'da.\n\nElif sizin için 7/24 müşteri takibi yapıyor, referans topluyor, kayıpları önlüyor.\n\nRakibiniz başlamadan siz başlayın. 💡\n\nwhattalk.ai ile tanışın 👇`,
+    tags: ['#whattalk','#yapayzekaasistan','#güzellikmerkezi','#elif','#dijitaldönüşüm','#salonmarketing','#müşterideneyimi']
+  },
+  'story-elif-agent-2026-03-20.html': {
+    text: `Merkezinizin yeni dijital çalışanı: Elif. 🤖✨\n\nSiz hizmet verirken Elif;\n✅ Memnuniyet anketi yapıyor\n✅ Referans kampanyası yürütüyor\n✅ 7/24 müşterilerinizle iletişimde\n\nArtık kaçan müşteri, kaçan referans yok.\n\nElif ile tanışın 👇\nwhattalk.ai`,
+    tags: ['#elif','#whattalk','#yapayzekaasistan','#güzellikmerkezi','#referans','#memnuniyet']
+  },
+  'post-referans-sistemi-2026-03-20.html': {
+    text: `Otomatik referans sistemi ile yeni müşteri bulmak artık çok daha kolay. 🎯\n\nElif her hizmet sonrası müşterinizi arıyor, memnuniyetini öğreniyor ve referans kampanyasına davet ediyor.\n\nSonuç? Sistematik büyüme. 📊\n\nwhattalk.ai ile deneyin 👇`,
+    tags: ['#referanssistemi','#whattalk','#elif','#güzellikmerkezi','#otomasyonpazarlama','#müşterimemnuniyeti']
+  },
+  'post-madelyn-marcel-referans-2026-03-19.html': {
+    text: `Madelyn Marcel Güzellik Merkezi'nden gerçek sonuçlar 👇\n\n137 müşteri → 445 yeni referans\nKişi başı ortalama 3.2 referans\n\nElif sadece 30 günde bu sonuçları elde etti. 🚀\n\nSiz de başlamak ister misiniz?\nwhattalk.ai`,
+    tags: ['#gerceksonuclar','#madelynmarcel','#whattalk','#elif','#referanspazarlama','#güzellikmerkezi']
+  },
+  'story-madelyn-marcel-sonuclar-2026-03-19.html': {
+    text: `Rakamlar her şeyi anlatıyor. 📊\n\n✅ 2.286 müşteri arandı\n✅ 1.732 kişiye ulaşıldı\n✅ 438 kişi kampanyaya katıldı\n✅ 137 referans gönderdi → 445 yeni isim\n\nBu Elif'in 30 günlük çalışması.\n\nSiz hâlâ manuel mi yönetiyorsunuz? 👀\nwhattalk.ai`,
+    tags: ['#istatistik','#whattalk','#elif','#referanssistemi','#güzellikmerkezi','#büyüme']
+  }
+};
+const postNames = {
+  'story-erken-donusen-2026-03-21.html':         'Erken Dönüşen',
+  'story-elif-agent-2026-03-20.html':             'Elif Agent',
+  'post-referans-sistemi-2026-03-20.html':        'Referans Sistemi',
+  'post-madelyn-marcel-referans-2026-03-19.html': 'Madelyn Marcel',
+  'story-madelyn-marcel-sonuclar-2026-03-19.html':'Madelyn Sonuçlar'
+};
+
+/* ── Select post from sidebar ── */
+function selectPost(el) {
+  document.querySelectorAll('.post-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  switchCreative(el.dataset.file, true);
+  addAiMessage(`"${postNames[el.dataset.file]}" seçildi ✓ Caption güncellendi.`);
+}
+
+/* ── Switch creative ── */
+function switchCreative(filename, silent) {
+  document.getElementById('fr').src = filename;
+  const data = captions[filename];
+  if (data) {
+    document.getElementById('captionText').value = data.text;
+    updateCharCount();
+    document.getElementById('tagList').innerHTML = data.tags.map(t => `<span class="cc-tag">${t}</span>`).join('');
+  }
+  const short = filename.replace('.html','');
+  document.getElementById('topbarFile').textContent = short;
+  document.querySelectorAll('.post-item').forEach(c => c.classList.toggle('active', c.dataset.file === filename));
+  if (!silent) addAiMessage(`"${postNames[filename]}" tasarımına geçtim ✓`);
+}
+
+/* ── Char count + caption auto-height ── */
+function fitCaptionHeight() {
+  const el = document.getElementById('captionText');
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+function updateCharCount() {
+  const text = document.getElementById('captionText').value;
+  const tags = [...document.querySelectorAll('#tagList .cc-tag')].map(t => t.textContent).join(' ');
+  document.getElementById('charCount').textContent = text.length + (tags ? tags.length + 1 : 0);
+  fitCaptionHeight();
+}
+updateCharCount();
+
+/* ── Copy ── */
+function copyCaption() {
+  const text = document.getElementById('captionText').value;
+  const tags = [...document.querySelectorAll('#tagList .cc-tag')].map(t => t.textContent).join(' ');
+  navigator.clipboard.writeText(text + '\n\n' + tags).then(() => addAiMessage('Caption panoya kopyalandı ✓'));
+}
+
+/* ── Regenerate ── */
+const regen = [
+  `Rakibiniz şu an ne yapıyor? 🤔\n\nMuhtemelen müşteri takibini unutuyor.\nReferansları kaçırıyor.\n\nSiz Elif'i çalıştırıyorsunuz.\n\nFark bu kadar basit. ✅\n\nwhattalk.ai`,
+  `Güzellik merkezlerinde en büyük gelir kaynağı:\n\n→ Mevcut memnun müşterinin referansı\n\nBu kaynağı sistematik kullanıyor musunuz?\n\nElif her gün bunun için çalışıyor. 💪\n\nwhattalk.ai ile tanışın 👇`,
+  `"Müşteri memnundu ama bir daha gelmiyor…"\n\nBu cümleyi kaç kez duydunuz? 😔\n\nElif bu durumu değiştiriyor:\n• Takip ediyor · Hatırlatıyor · Referans alıyor\n\nOtomatik. Sistematik. Kesintisiz.\n\nwhattalk.ai 🤖`
+];
+let regenIdx = 0;
+function regenerateCaption() {
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    document.getElementById('captionText').value = regen[regenIdx % regen.length];
+    regenIdx++; updateCharCount();
+    addAiMessage('Yeni versiyon hazır! Beğendiyseniz kopyalayabilirsiniz. 🎉');
+  }, 1400);
+}
+
+/* ── Chat helpers ── */
+function addMsg(text, type) {
+  const msgs = document.getElementById('chatMessages');
+  const now  = new Date();
+  const time = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+  const div  = document.createElement('div');
+  div.className = `msg ${type}`;
+  div.innerHTML = `<div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div><div class="msg-time">${time}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function addAiMessage(t) { addMsg(t, 'ai'); }
+function showTyping() {
+  document.getElementById('typingWrap').classList.add('show');
+  document.getElementById('chatMessages').scrollTop = 9999;
+}
+function hideTyping() { document.getElementById('typingWrap').classList.remove('show'); }
+
+/* ── Keyword detection ── */
+const creativeKeywords = [
+  { keys:['erken','dönüşen','donusen'],           file:'story-erken-donusen-2026-03-21.html' },
+  { keys:['elif','agent','asistan'],               file:'story-elif-agent-2026-03-20.html' },
+  { keys:['referans sist','referans post'],        file:'post-referans-sistemi-2026-03-20.html' },
+  { keys:['madelyn','marcel'],                     file:'post-madelyn-marcel-referans-2026-03-19.html' },
+  { keys:['sonuç','sonuclar','istatistik','rakam'],file:'story-madelyn-marcel-sonuclar-2026-03-19.html' },
+];
+function parseCreative(text) {
+  const lower = text.toLowerCase();
+  for (const c of creativeKeywords) { if (c.keys.some(k => lower.includes(k))) return c; }
+  return null;
+}
+
+const aiReplies = [
+  'Caption güncellendi ✓ Tonu değiştirmemi ister misiniz?',
+  'Yeni versiyon hazırlandı. Caption panelini kontrol edin.',
+  'Caption güncellendi. Daha kısa yazayım mı?',
+  'Hazır! Daha aksiyon odaklı bir versiyon istedim. Nasıl buldunuz?',
+];
+let replyIdx = 0;
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  addMsg(text, 'user');
+  input.value = ''; input.style.height = 'auto';
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    const match = parseCreative(text);
+    if (match) {
+      switchCreative(match.file);
+    } else {
+      addAiMessage(aiReplies[replyIdx % aiReplies.length]); replyIdx++;
+      document.getElementById('captionText').value = regen[regenIdx % regen.length]; regenIdx++;
+      updateCharCount();
+    }
+  }, 900 + Math.random() * 400);
+}
+
+function handleKey(e)   { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 80) + 'px'; }
+
+/* ── Downloads ── */
+function downloadPng() {
+  try {
+    const doc = document.getElementById('fr').contentDocument;
+    const btn = doc.getElementById('download-btn');
+    if (btn) { btn.style.display = ''; btn.click(); btn.style.display = 'none'; return; }
+  } catch(e) {}
+  addAiMessage('Bu kreatif için PNG indirme desteklenmiyor.');
+}
+function downloadMp4() {
+  try {
+    const doc = document.getElementById('fr').contentDocument;
+    const btn = doc.getElementById('export-btn');
+    if (btn) { btn.style.display = ''; btn.click(); btn.style.display = 'none'; return; }
+  } catch(e) {}
+  addAiMessage('Bu kreatif için MP4 indirme desteklenmiyor.');
+}
+</script>
+
+</body>
+</html>

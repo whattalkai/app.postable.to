@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080">
+  <title>WhatTalk — Madelyn Marcel Kampanya Sonuçları</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    :root {
+      --black:      #0A0A0A;
+      --teal:       #00C2A8;
+      --teal-dim:   rgba(0,194,168,0.12);
+      --teal-glow:  rgba(0,194,168,0.25);
+      --purple:     #7855FF;
+      --white:      #FFFFFF;
+      --grey:       #888888;
+      --card-bg:    #111111;
+      --border:     #1E1E1E;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 1080px;
+      background: #0A0A0A;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* ── Buttons row ── */
+    .btn-row {
+      display: flex;
+      width: 1080px;
+    }
+    .btn-row button {
+      flex: 1;
+      padding: 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-row button:disabled { opacity: 0.6; cursor: wait; }
+    #download-btn  { background: #00C2A8; color: #0A0A0A; }
+    #download-btn:hover:not(:disabled)  { background: #00a890; }
+    #export-btn    { background: #7855FF; color: #ffffff; }
+    #export-btn:hover:not(:disabled)    { background: #6644ee; }
+
+    /* ── Canvas ── */
+    #canvas {
+      width: 1080px;
+      height: 1920px;
+      background: var(--black);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Background ambience ── */
+    .bg-blob-1 {
+      position: absolute;
+      width: 800px; height: 800px;
+      background: radial-gradient(circle, rgba(120,85,255,0.20) 0%, transparent 65%);
+      top: -180px; left: -260px;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .bg-blob-2 {
+      position: absolute;
+      width: 650px; height: 650px;
+      background: radial-gradient(circle, rgba(0,194,168,0.14) 0%, transparent 65%);
+      bottom: 380px; right: -150px;
+      filter: blur(90px);
+      pointer-events: none;
+    }
+    .bg-blob-3 {
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(120,85,255,0.10) 0%, transparent 65%);
+      bottom: 180px; left: -80px;
+      filter: blur(100px);
+      pointer-events: none;
+    }
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 80px 80px;
+      pointer-events: none;
+    }
+
+    /* ── Safe zone (top 285px, height 1350px) ── */
+    .safe-zone {
+      position: absolute;
+      top: 285px;
+      left: 0;
+      width: 1080px;
+      height: 1350px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 72px 72px 60px;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--teal);
+      border-radius: 40px;
+      padding: 16px 40px;
+      margin-bottom: 40px;
+    }
+    .badge-dot {
+      width: 10px; height: 10px;
+      background: var(--teal);
+      border-radius: 50%;
+    }
+    .badge-text {
+      font-size: 30px;
+      font-weight: 500;
+      color: var(--teal);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Headline ── */
+    .headline {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .headline h1 {
+      font-size: 72px;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+    .subline {
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--grey);
+      text-align: center;
+      letter-spacing: -0.01em;
+      margin-bottom: 48px;
+    }
+
+    /* ── KPI Cards ── */
+    .kpi-row {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 24px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--teal) 0%, transparent 100%);
+    }
+    .kpi-icon {
+      width: 48px; height: 48px;
+      background: var(--teal-dim);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .kpi-number {
+      font-size: 72px;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi-label {
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--grey);
+      text-align: center;
+      line-height: 1.35;
+    }
+
+    /* ── Funnel card (numbers only, no bars) ── */
+    .funnel-card {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 44px 52px;
+      margin-bottom: 24px;
+    }
+    .funnel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+    .funnel-header-text {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--teal);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .funnel-steps {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .funnel-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .funnel-num {
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .num-1 { color: rgba(255,255,255,0.65); }
+    .num-2 { color: rgba(255,255,255,0.80); }
+    .num-3 { color: rgba(255,255,255,0.95); }
+    .num-4 { color: var(--teal); }
+
+    .funnel-lbl {
+      font-size: 30px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.70);
+    }
+    .funnel-arrow {
+      font-size: 28px;
+      color: var(--teal);
+      opacity: 0.45;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    /* ── Summary ── */
+    .summary {
+      width: 100%;
+      background: var(--teal-dim);
+      border: 1px solid var(--teal-glow);
+      border-radius: 16px;
+      padding: 36px 48px;
+      text-align: center;
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--teal);
+      line-height: 1.5;
+      margin-bottom: 0;
+    }
+
+    .spacer { flex: 1; }
+
+    /* ── Animation standard ── */
+    @keyframes revealUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate {
+      opacity: 0;
+      animation: revealUp 0.5s ease-out forwards;
+    }
+
+    /* ── Logo — absolutely at canvas bottom, outside safe zone ── */
+    .logo-bottom {
+      position: absolute;
+      bottom: 90px;
+      left: 0;
+      width: 1080px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Buttons (not part of canvas) -->
+  <div class="btn-row">
+    <button id="download-btn" onclick="downloadPNG()">⬇ PNG olarak indir</button>
+    <button id="export-btn"   onclick="exportMP4()">⬇ MP4 olarak indir</button>
+  </div>
+
+  <!-- The actual 1080×1920 canvas -->
+  <div id="canvas">
+    <div class="bg-blob-1"></div>
+    <div class="bg-blob-2"></div>
+    <div class="bg-blob-3"></div>
+    <div class="bg-grid"></div>
+
+    <div class="safe-zone">
+
+      <div class="badge animate" style="animation-delay: 0s;">
+        <div class="badge-dot"></div>
+        <span class="badge-text">Gerçek Müşteri · Gerçek Sonuç</span>
+      </div>
+
+      <div class="headline animate" style="animation-delay: 0.8s;">
+        <h1>Madelyn Marcel<br>Güzellik Merkezi</h1>
+      </div>
+      <div class="subline animate" style="animation-delay: 1.6s;">Elif ile ilk kampanya sonuçları</div>
+
+      <div class="kpi-row animate" style="animation-delay: 2.4s;">
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="#00C2A8" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="9" cy="7" r="4" stroke="#00C2A8" stroke-width="2"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="#00C2A8" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="kpi-number">137</div>
+          <div class="kpi-label">Referans Gönderen<br>Müşteri</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="#00C2A8" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="9" cy="7" r="4" stroke="#00C2A8" stroke-width="2"/>
+              <line x1="19" y1="8" x2="19" y2="14" stroke="#00C2A8" stroke-width="2" stroke-linecap="round"/>
+              <line x1="22" y1="11" x2="16" y2="11" stroke="#00C2A8" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="kpi-number">445</div>
+          <div class="kpi-label">Toplam Yeni<br>Referans</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke="#00C2A8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="kpi-number">3.2</div>
+          <div class="kpi-label">Kişi Başı<br>Referans</div>
+        </div>
+      </div>
+
+      <!-- Funnel — numbers + arrows only, no bars -->
+      <div class="funnel-card animate" style="animation-delay: 3.2s;">
+        <div class="funnel-header">
+          <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" stroke="#00C2A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="16 7 22 7 22 13" stroke="#00C2A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="funnel-header-text">Performans İstatistikleri</span>
+        </div>
+        <div class="funnel-steps">
+          <div class="funnel-step">
+            <div class="funnel-num num-1">2.286</div>
+            <div class="funnel-lbl">Aranan</div>
+          </div>
+          <div class="funnel-arrow">→</div>
+          <div class="funnel-step">
+            <div class="funnel-num num-2">1.732</div>
+            <div class="funnel-lbl">Ulaşılan</div>
+          </div>
+          <div class="funnel-arrow">→</div>
+          <div class="funnel-step">
+            <div class="funnel-num num-3">438</div>
+            <div class="funnel-lbl">Katılan</div>
+          </div>
+          <div class="funnel-arrow">→</div>
+          <div class="funnel-step">
+            <div class="funnel-num num-4">137</div>
+            <div class="funnel-lbl">Gönderen</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary animate" style="animation-delay: 4.0s;">
+        137 müşteri, ortalama 3.2 arkadaşını tavsiye etti —<br>
+        445 yeni isim, hepsi kayıt altında.
+      </div>
+
+    </div>
+
+    <!-- Logo — outside safe zone, canvas bottom center -->
+    <div class="logo-bottom animate" style="animation-delay: 4.8s;">
+      <svg width="200" height="59" viewBox="0 0 1497 441" xmlns="http://www.w3.org/2000/svg" opacity="0.85">
+        <path fill="#ffffff" d="M199.5 407.5625C96.085938 407.5625 12.46875 323.945312 12.46875 220.53125C12.46875 117.117188 96.085938 33.5 199.5 33.5C302.914062 33.5 386.53125 117.117188 386.53125 220.53125C386.53125 323.945312 302.914062 407.5625 199.5 407.5625Z" fill-rule="evenodd"/>
+        <path stroke-linecap="round" transform="matrix(0.779297,0,0,0.779297,0.0000186701,21.031106)" fill="none" stroke-linejoin="round" d="M155.999997 292.000223C206.000003 350.00023 306.000016 350.00023 356.000023 292.000223" stroke="#000000" stroke-width="40" stroke-opacity="1" stroke-miterlimit="4"/>
+        <g transform="matrix(1,0,0,1,435,75)" fill="#ffffff" fill-opacity="1">
+          <g transform="translate(1.057548,226.525283)"><path d="M50.597656 0L88.246094 0L119.664062-110.789062L151.316406 0L188.964844 0L235.96875-167.863281L201.195312-167.863281L169.0625-43.40625L133.8125-167.863281L105.515625-167.863281L70.503906-43.40625L38.367188-167.863281L3.597656-167.863281Z"/></g>
+          <g transform="translate(235.82524,226.525283)"><path d="M80.8125-123.257812C64.746094-123.257812 52.277344-117.265625 45.082031-106.472656L45.082031-167.863281L14.148438-167.863281L14.148438 0L45.082031 0L45.082031-64.746094C45.082031-85.609375 56.355469-94.484375 71.460938-94.484375C85.371094-94.484375 95.203125-86.089844 95.203125-69.78125L95.203125 0L126.136719 0L126.136719-73.621094C126.136719-105.515625 106.234375-123.257812 80.8125-123.257812Z"/></g>
+          <g transform="translate(374.191867,226.525283)"><path d="M105.273438-119.902344L105.273438-105.753906C96.640625-116.542969 83.691406-123.257812 66.1875-123.257812C34.292969-123.257812 7.914062-95.683594 7.914062-59.949219C7.914062-24.21875 34.292969 3.355469 66.1875 3.355469C83.691406 3.355469 96.640625-3.355469 105.273438-14.148438L105.273438 0L136.207031 0L136.207031-119.902344ZM71.941406-26.136719C52.996094-26.136719 38.847656-39.808594 38.847656-59.949219C38.847656-80.09375 52.996094-93.761719 71.941406-93.761719C91.125-93.761719 105.273438-80.09375 105.273438-59.949219C105.273438-39.808594 91.125-26.136719 71.941406-26.136719Z"/></g>
+          <g transform="translate(524.30888,226.525283)"><path d="M82.730469-90.167969L82.730469-119.902344L55.632812-119.902344L55.632812-153.472656L24.699219-144.121094L24.699219-119.902344L3.835938-119.902344L3.835938-90.167969L24.699219-90.167969L24.699219-40.285156C24.699219-7.914062 39.328125 4.796875 82.730469 0L82.730469-28.058594C64.988281-27.097656 55.632812-27.335938 55.632812-40.285156L55.632812-90.167969Z"/></g>
+          <g transform="translate(616.633208,226.525283)"><path d="M126.617188-167.863281L3.117188-167.863281L3.117188-136.207031L48.199219-136.207031L48.199219 0L81.292969 0L81.292969-136.207031L126.617188-136.207031Z"/></g>
+          <g transform="translate(724.304968,226.525283)"><path d="M105.273438-119.902344L105.273438-105.753906C96.640625-116.542969 83.691406-123.257812 66.1875-123.257812C34.292969-123.257812 7.914062-95.683594 7.914062-59.949219C7.914062-24.21875 34.292969 3.355469 66.1875 3.355469C83.691406 3.355469 96.640625-3.355469 105.273438-14.148438L105.273438 0L136.207031 0L136.207031-119.902344ZM71.941406-26.136719C52.996094-26.136719 38.847656-39.808594 38.847656-59.949219C38.847656-80.09375 52.996094-93.761719 71.941406-93.761719C91.125-93.761719 105.273438-80.09375 105.273438-59.949219C105.273438-39.808594 91.125-26.136719 71.941406-26.136719Z"/></g>
+          <g transform="translate(874.422026,226.525283)"><path d="M14.148438 0L45.082031 0L45.082031-175.058594L14.148438-175.058594Z"/></g>
+          <g transform="translate(933.653474,226.525283)"><path d="M124.699219 0L75.058594-60.671875L123.257812-119.902344L86.328125-119.902344L45.082031-67.144531L45.082031-167.863281L14.148438-167.863281L14.148438 0L45.082031 0L45.082031-54.433594L88.726562 0Z"/></g>
+        </g>
+      </svg>
+    </div>
+
+  </div>
+
+  <script>
+    async function downloadPNG() {
+      const btn = document.getElementById('download-btn');
+      btn.textContent = 'Hazırlanıyor...';
+      btn.disabled = true;
+
+      // Force all animated elements to their final visible state
+      const animated = document.querySelectorAll('.animate');
+      animated.forEach(el => {
+        el.style.animation = 'none';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      });
+
+      // Small delay so the browser repaints before capture
+      await new Promise(r => setTimeout(r, 80));
+
+      const canvas = await html2canvas(document.getElementById('canvas'), {
+        width: 1080,
+        height: 1920,
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#0A0A0A'
+      });
+
+      // Restore animations
+      animated.forEach(el => {
+        el.style.animation = '';
+        el.style.opacity = '';
+        el.style.transform = '';
+      });
+
+      const link = document.createElement('a');
+      link.download = 'whattalk-madelyn-marcel-referans.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      btn.textContent = '⬇ PNG olarak indir';
+      btn.disabled = false;
+    }
+
+    function exportMP4() {
+      const btn = document.getElementById('export-btn');
+      btn.disabled = true;
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,10,0.93);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:Inter,sans-serif;';
+      overlay.innerHTML = `
+        <div id="ov-title" style="font-size:20px;font-weight:700;color:#00C2A8;letter-spacing:-0.02em;">⚙ MP4 Hazırlanıyor...</div>
+        <div id="ov-log" style="font-size:13px;color:#888;max-width:440px;text-align:center;line-height:1.6;word-break:break-all;min-height:40px;"></div>
+        <div style="font-size:12px;color:#444;">Bu pencereyi kapatmayın · ~2 dakika sürebilir</div>
+      `;
+      document.body.appendChild(overlay);
+
+      const logEl = document.getElementById('ov-log');
+      const titleEl = document.getElementById('ov-title');
+
+      const es = new EventSource('http://localhost:3131/export?file=outputs%2Fpost-madelyn-marcel-referans-2026-03-19.html');
+
+      es.onmessage = (e) => {
+        const d = JSON.parse(e.data);
+        if (d.type === 'log') {
+          logEl.textContent = d.msg.replace(/\s+/g, ' ').trim();
+        } else if (d.type === 'done') {
+          es.close();
+          titleEl.textContent = '✓ MP4 Hazır!';
+          logEl.style.color = '#00C2A8';
+          logEl.textContent = 'İndirme başlıyor...';
+          setTimeout(() => {
+            window.location.href = 'http://localhost:3131/download?file=' + encodeURIComponent(d.file);
+            setTimeout(() => {
+              document.body.removeChild(overlay);
+              btn.disabled = false;
+            }, 2000);
+          }, 600);
+        } else if (d.type === 'error') {
+          es.close();
+          titleEl.style.color = '#EF4444';
+          titleEl.textContent = '✗ Export Başarısız';
+          logEl.style.color = '#EF4444';
+          logEl.textContent = d.msg;
+          setTimeout(() => { document.body.removeChild(overlay); btn.disabled = false; }, 4000);
+        }
+      };
+
+      es.onerror = () => {
+        es.close();
+        titleEl.style.color = '#EF4444';
+        titleEl.textContent = '✗ Bağlantı Hatası';
+        logEl.style.color = '#EF4444';
+        logEl.textContent = 'Sunucuya bağlanılamadı. Terminalde: node .claude/server.js';
+        setTimeout(() => { document.body.removeChild(overlay); btn.disabled = false; }, 4000);
+      };
+    }
+  </script>
+</body>
+</html>
