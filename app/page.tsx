@@ -496,23 +496,33 @@ export default function Studio() {
     if (revoke) setTimeout(() => URL.revokeObjectURL(href), 2000)
   }
 
+  // Inject html2canvas into an iframe's window and return a capture function
+  // that runs in the iframe's own JS context (correct window/styles).
+  async function loadH2cInIframe(iframe: HTMLIFrameElement): Promise<(opts: object) => Promise<HTMLCanvasElement>> {
+    const iframeDoc = iframe.contentDocument
+    const iframeWin = iframe.contentWindow as Window & { html2canvas?: (el: HTMLElement, opts: object) => Promise<HTMLCanvasElement> }
+    if (!iframeDoc || !iframeWin) throw new Error("iframe not accessible")
+    if (!iframeWin.html2canvas) {
+      await new Promise<void>((resolve, reject) => {
+        const s = iframeDoc.createElement("script")
+        s.src = "/html2canvas.min.js"
+        s.onload = () => resolve()
+        s.onerror = () => reject(new Error("html2canvas script failed to load"))
+        iframeDoc.head.appendChild(s)
+      })
+    }
+    const h2c = iframeWin.html2canvas!
+    return (opts: object) => h2c(iframeDoc.body, opts)
+  }
+
   async function exportPng() {
     if (!active || exporting || (!active.html && !active.src)) return
     setExporting("png")
     try {
       const iframe = iframeRef.current
-      if (!iframe?.contentDocument?.body) throw new Error("iframe not ready")
-      const { default: html2canvas } = await import("html2canvas")
-      const canvas = await html2canvas(iframe.contentDocument.body, {
-        width: 1080,
-        height: 1920,
-        windowWidth: 1080,
-        windowHeight: 1920,
-        scale: 1,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-      })
+      if (!iframe) throw new Error("iframe not ready")
+      const capture = await loadH2cInIframe(iframe)
+      const canvas = await capture({ width: 1080, height: 1920, windowWidth: 1080, windowHeight: 1920, scale: 1, useCORS: true, allowTaint: true, logging: false })
       triggerDownload(canvas.toDataURL("image/png"), `${active.title.slice(0, 40)}.png`)
     } catch (e) { console.error("PNG export:", e) }
     finally { setExporting(null) }
@@ -524,8 +534,9 @@ export default function Studio() {
     setExportProgress(5)
     try {
       const iframe = iframeRef.current
-      if (!iframe?.contentDocument?.body) throw new Error("iframe not ready")
-      const { default: html2canvas } = await import("html2canvas")
+      if (!iframe) throw new Error("iframe not ready")
+      const capture = await loadH2cInIframe(iframe)
+      const captureOpts = { width: 1080, height: 1920, windowWidth: 1080, windowHeight: 1920, scale: 1, useCORS: true, allowTaint: true, logging: false }
 
       const fps = 3
       const durationMs = 5000
@@ -553,20 +564,8 @@ export default function Studio() {
 
       recorder.start()
       for (let i = 0; i < frameCount; i++) {
-        const body = iframe.contentDocument?.body
-        if (body) {
-          const frame = await html2canvas(body, {
-            width: 1080,
-            height: 1920,
-            windowWidth: 1080,
-            windowHeight: 1920,
-            scale: 1,
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-          })
-          ctx.drawImage(frame, 0, 0)
-        }
+        const frame = await capture(captureOpts)
+        ctx.drawImage(frame, 0, 0)
         setExportProgress(5 + Math.round(((i + 1) / frameCount) * 90))
         await new Promise(r => setTimeout(r, 1000 / fps))
       }
