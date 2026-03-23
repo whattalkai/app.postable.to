@@ -1,5 +1,8 @@
 import puppeteerCore from "puppeteer-core"
-import chromium from "@sparticuz/chromium"
+import chromium from "@sparticuz/chromium-min"
+
+const CHROMIUM_BINARY_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar"
 
 // Increase timeout for long-running export
 export const maxDuration = 60
@@ -8,7 +11,7 @@ async function launchBrowser() {
   if (process.env.VERCEL) {
     return puppeteerCore.launch({
       args: chromium.args,
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(CHROMIUM_BINARY_URL),
       headless: true,
     })
   }

@@ -2,9 +2,13 @@
 
 ## To Do
 
+- **Move Studio/Brand workspace dropdown to middle navbar** — Currently the workspace selector (Studio, Brand) is in a dropdown on the left side. Move it to the middle/center navbar area, similar to Claude's tab-style design (like the Chat/Cowork/Code tabs in the screenshot). Should look like inline tab buttons rather than a dropdown menu.
+
 <!-- Add new tasks here -->
 
 ## In Progress
+
+- **Fix MP4/PNG export on production (Vercel)** — `@sparticuz/chromium` binary gets stripped at deploy time. Switching to `@sparticuz/chromium-min` which downloads from a URL at runtime.
 
 ## Self Review
 
@@ -13,7 +17,6 @@
 ## In Review
 
 - **Add Voice Input (Speech-to-Text) to AI Chat in StudioPage** — Mic button with Whisper API, Turkish/English support, tap-to-toggle recording, transcribed text inserted into chat input. Files created: `app/api/transcribe/route.ts`, `lib/services/speechToText.ts`, `lib/hooks/useVoiceInput.ts`, `components/VoiceInputButton.tsx`. Integrated into `app/page.tsx` chat input bar. Requires `OPENAI_API_KEY` env var.
-- **Fix MP4 export on production (Vercel)** — Replaced `puppeteer` with `puppeteer-core` + `@sparticuz/chromium`. Local export API returns 200. Files changed: `app/api/export/route.ts`, `next.config.ts`, `package.json`. Needs Cemre to test MP4 download on `app.postable.to` after Vercel deploys.
 
 <!-- Tasks confirmed working, waiting for Cemre's approval -->
 
