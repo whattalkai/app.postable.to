@@ -1,7 +1,24 @@
-import puppeteer from "puppeteer"
+import puppeteerCore from "puppeteer-core"
+import chromium from "@sparticuz/chromium"
 
 // Increase timeout for long-running export
 export const maxDuration = 60
+
+async function launchBrowser() {
+  if (process.env.VERCEL) {
+    return puppeteerCore.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    })
+  }
+  // Local dev — use bundled puppeteer
+  const puppeteer = await import("puppeteer")
+  return puppeteer.default.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+  })
+}
 
 export async function POST(req: Request) {
   try {
@@ -11,10 +28,7 @@ export async function POST(req: Request) {
       return Response.json({ error: "html gerekli" }, { status: 400 })
     }
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-    })
+    const browser = await launchBrowser()
 
     const page = await browser.newPage()
     await page.setViewport({ width: 1080, height: 1920, deviceScaleFactor: 1 })

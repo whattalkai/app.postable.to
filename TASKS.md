@@ -6,7 +6,8 @@
 
 ## In Progress
 
-<!-- Tasks currently being worked on -->
+- **Add Voice Input (Speech-to-Text) to AI Chat in StudioPage** — Mic button with Whisper API, Turkish/English support, tap-to-toggle recording, transcribed text inserted into chat input.
+- **Fix MP4 export on production (Vercel)** — Puppeteer can't find Chrome on serverless. Fixing with `@sparticuz/chromium` + `puppeteer-core`.
 
 ## Self Review
 
@@ -22,4 +23,4 @@
 
 ## Done
 
-- **Fix PNG and MP4 file downloads** — Two bugs fixed: (1) anchor element was never appended to the DOM before `.click()`, causing silent failures in some browsers; (2) video was encoded as WebM but named `.mp4` — renamed to `.webm` to match actual format.
+- **Fix PNG and MP4 file downloads (local)** — Two bugs fixed: (1) anchor element was never appended to the DOM before `.click()`; (2) video renamed from `.mp4` to `.webm`. Works locally — production MP4 still broken (separate task above).
