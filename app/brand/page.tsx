@@ -66,7 +66,7 @@ export default function BrandPage() {
   const [saved, setSaved] = useState(false)
   const [showList, setShowList] = useState(true)
   const [showChat, setShowChat] = useState(true)
-  const [showNav, setShowNav] = useState(false)
+
   const [activeSection, setActiveSection] = useState("logo")
 
   const chatEndRef = useRef<HTMLDivElement>(null)
@@ -195,45 +195,7 @@ export default function BrandPage() {
       <div style={{ height: 50, background: "#141414", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", padding: "0 12px 0 10px", gap: 6, flexShrink: 0, zIndex: 100 }}>
 
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "0 4px" }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: "#e6e6e6", letterSpacing: "-0.03em" }}>Postable</span>
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setShowNav(v => !v)}
-              style={{ fontSize: 9, fontWeight: 700, color: "#7855FF", background: "rgba(120,85,255,0.08)", border: "1px solid rgba(120,85,255,0.25)", padding: "2px 7px", borderRadius: 4, letterSpacing: "0.05em", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
-            >
-              BRAND
-              <svg width="7" height="7" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            {showNav && (
-              <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setShowNav(false)}/>
-                <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 100, background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, padding: 4, minWidth: 140, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#3d3d3d", letterSpacing: "0.06em", padding: "4px 8px 6px", textTransform: "uppercase" as const }}>Workspace</div>
-                  <a href="/" style={{ textDecoration: "none" }} onClick={() => setShowNav(false)}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 6, marginBottom: 2 }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#e6e6e6" strokeWidth="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="#e6e6e6"/><polyline points="21 15 16 10 5 21" stroke="#e6e6e6" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#e6e6e6" }}>Studio</div>
-                        <div style={{ fontSize: 9.5, color: "#6b6b6b" }}>İçerik & Tasarım</div>
-                      </div>
-                    </div>
-                  </a>
-                  <a href="/brand" style={{ textDecoration: "none" }} onClick={() => setShowNav(false)}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 6, background: "rgba(120,85,255,0.06)" }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#7855FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#7855FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Brand</div>
-                        <div style={{ fontSize: 9.5, color: "#6b6b6b" }}>Marka Kimliği</div>
-                      </div>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ marginLeft: "auto" }}><polyline points="20 6 9 17 4 12" stroke="#7855FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </div>
-                  </a>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#e6e6e6", letterSpacing: "-0.03em", margin: "0 4px" }}>Postable</span>
 
         {/* Sidebar toggle */}
         <button onClick={() => setShowList(v => !v)} title="Bölümler" style={{ ...S.panelBtn, color: showList ? "#fff" : "#6b6b6b" }}>
@@ -245,6 +207,20 @@ export default function BrandPage() {
         <span style={{ fontSize: 11, color: "#6b6b6b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>
           {brand.name || "marka-adi"}
         </span>
+
+        <div style={{ flex: 1 }}/>
+
+        {/* Workspace tabs */}
+        <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: 2, gap: 2 }}>
+          <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", background: "transparent", color: "#6b6b6b", transition: "all 0.15s" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><polyline points="21 15 16 10 5 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            Studio
+          </a>
+          <a href="/brand" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", background: "rgba(120,85,255,0.12)", color: "#b8a1ff", transition: "all 0.15s" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Brand
+          </a>
+        </div>
 
         <div style={{ flex: 1 }}/>
 
