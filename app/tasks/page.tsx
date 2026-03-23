@@ -1,5 +1,6 @@
 import fs from "fs"
 import path from "path"
+import { DoneButton } from "./DoneButton"
 
 type Column = {
   title: string
@@ -147,6 +148,9 @@ export default function TasksPage() {
                       }}>
                         {task.body}
                       </span>
+                    )}
+                    {col.title === "In Review" && (
+                      <DoneButton taskTitle={task.title} />
                     )}
                   </div>
                 ))
