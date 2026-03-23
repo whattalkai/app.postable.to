@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.80.0",
     "@sparticuz/chromium-min": "^143.0.4",
     "html2canvas": "^1.4.1",
+    "mp4-muxer": "^5.2.2",
     "next": "16.2.1",
     "puppeteer": "^24.40.0",
     "puppeteer-core": "^24.40.0",

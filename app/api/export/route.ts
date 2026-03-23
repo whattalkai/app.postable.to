@@ -7,10 +7,16 @@ const CHROMIUM_BINARY_URL =
 // Increase timeout for long-running export
 export const maxDuration = 60
 
+const EXTRA_ARGS = [
+  "--disable-web-security",
+  "--disable-features=IsolateOrigins,site-per-process",
+  "--allow-running-insecure-content",
+]
+
 async function launchBrowser() {
   if (process.env.VERCEL) {
     return puppeteerCore.launch({
-      args: chromium.args,
+      args: [...chromium.args, ...EXTRA_ARGS],
       executablePath: await chromium.executablePath(CHROMIUM_BINARY_URL),
       headless: true,
     })
@@ -19,7 +25,7 @@ async function launchBrowser() {
   const puppeteer = await import("puppeteer")
   return puppeteer.default.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", ...EXTRA_ARGS],
   })
 }
 
@@ -38,6 +44,17 @@ export async function POST(req: Request) {
 
     // Inject the HTML and wait for fonts + network to settle
     await page.setContent(html, { waitUntil: "networkidle0", timeout: 15000 })
+
+    // Explicitly wait for all images to finish loading or error out
+    await page.evaluate(() =>
+      Promise.all(
+        Array.from(document.images).map(img =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise(res => { img.onload = res; img.onerror = res })
+        )
+      )
+    )
 
     // Reset all animations to frame 0 — networkidle0 can take time during
     // which CSS animations have already progressed

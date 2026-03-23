@@ -546,46 +546,67 @@ export default function Studio() {
       if (!res.ok) throw new Error(await res.text())
       const { frames, fps: serverFps } = await res.json() as { frames: string[], fps: number }
 
-      setExportProgress(50) // frames received, now encode
+      setExportProgress(50) // frames received, now encode to MP4
 
-      // Draw server frames onto a canvas and record with MediaRecorder
-      const recCanvas = document.createElement("canvas")
-      recCanvas.width = 1080; recCanvas.height = 1920
-      const ctx = recCanvas.getContext("2d")!
-      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-        ? "video/webm;codecs=vp9" : "video/webm"
-      const stream = recCanvas.captureStream(serverFps)
-      const recorder = new MediaRecorder(stream, { mimeType })
-      const chunks: Blob[] = []
-      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
-
-      const done = new Promise<void>(resolve => {
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: mimeType })
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement("a")
-          a.download = `${active.title.slice(0, 40)}.webm`
-          a.href = url
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          setTimeout(() => URL.revokeObjectURL(url), 2000)
-          resolve()
-        }
+      // Encode frames to true H.264 MP4 using Web Codecs API + mp4-muxer
+      const { Muxer, ArrayBufferTarget } = await import("mp4-muxer")
+      const muxer = new Muxer({
+        target: new ArrayBufferTarget(),
+        video: { codec: "avc", width: 1080, height: 1920 },
+        fastStart: "in-memory",
       })
 
-      recorder.start()
+      // Try H.264 codec variants from most to least compatible
+      const h264Variants = ["avc1.42E01E", "avc1.42001f", "avc1.4D0028", "avc1.640028"]
+      let videoConfig: VideoEncoderConfig | null = null
+      for (const codec of h264Variants) {
+        const cfg: VideoEncoderConfig = { codec, width: 1080, height: 1920, bitrate: 6_000_000, framerate: serverFps }
+        const { supported } = await VideoEncoder.isConfigSupported(cfg)
+        if (supported) { videoConfig = cfg; break }
+      }
+      if (!videoConfig) throw new Error("H.264 encoding not supported in this browser. Please use Chrome or Edge.")
+
+      let encodeError: Error | null = null
+      const encoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta ?? undefined),
+        error: (e) => { encodeError = e as Error },
+      })
+      encoder.configure(videoConfig)
+
       for (let i = 0; i < frames.length; i++) {
-        await new Promise<void>(resolve => {
-          const img = new Image()
-          img.onload = () => { ctx.drawImage(img, 0, 0); resolve() }
+        if (encodeError) throw encodeError
+        const img = new Image()
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve()
+          img.onerror = reject
           img.src = `data:image/jpeg;base64,${frames[i]}`
         })
-        setExportProgress(50 + Math.round(((i + 1) / frames.length) * 50))
-        await new Promise(r => setTimeout(r, 1000 / serverFps))
+        const bitmap = await createImageBitmap(img)
+        const frame = new VideoFrame(bitmap, {
+          timestamp: Math.round((i * 1_000_000) / serverFps),
+          duration: Math.round(1_000_000 / serverFps),
+        })
+        encoder.encode(frame, { keyFrame: i % serverFps === 0 })
+        frame.close()
+        bitmap.close()
+        setExportProgress(50 + Math.round(((i + 1) / frames.length) * 45))
       }
-      recorder.stop()
-      await done
+
+      await encoder.flush()
+      if (encodeError) throw encodeError
+      muxer.finalize()
+
+      const buffer = (muxer.target as InstanceType<typeof ArrayBufferTarget>).buffer
+      const blob = new Blob([buffer], { type: "video/mp4" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.download = `${active.title.slice(0, 40)}.mp4`
+      a.href = url
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 2000)
+      setExportProgress(100)
     } catch (e) { console.error("MP4 export:", e) }
     finally { setExporting(null); setExportProgress(0) }
   }
@@ -739,10 +760,10 @@ export default function Studio() {
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto" as const, padding: "12px 12px 6px", display: "flex", flexDirection: "column", gap: 10, scrollBehavior: "smooth" }}>
+          <div style={{ flex: 1, overflowY: "auto" as const, overflowX: "hidden" as const, padding: "12px 12px 6px", display: "flex", flexDirection: "column", gap: 10, scrollBehavior: "smooth" }}>
             {msgs.map((m, i) => (
               <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3, maxWidth: "90%", alignSelf: m.role === "user" ? "flex-end" : "flex-start", alignItems: m.role === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{ padding: "8px 11px", borderRadius: 11, fontSize: 12, lineHeight: 1.55, background: m.role === "user" ? "#fff" : "#1c1c1c", color: m.role === "user" ? "#0c0c0c" : "#e6e6e6", borderBottomLeftRadius: m.role === "ai" ? 3 : 11, borderBottomRightRadius: m.role === "user" ? 3 : 11 }}>
+                <div style={{ padding: "8px 11px", borderRadius: 11, fontSize: 12, lineHeight: 1.55, background: m.role === "user" ? "#fff" : "#1c1c1c", color: m.role === "user" ? "#0c0c0c" : "#e6e6e6", borderBottomLeftRadius: m.role === "ai" ? 3 : 11, borderBottomRightRadius: m.role === "user" ? 3 : 11, wordBreak: "break-word" as const, overflowWrap: "break-word" as const }}>
                   {m.images && m.images.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: m.text ? 6 : 0 }}>
                       {m.images.map((src, idx) => (
@@ -961,7 +982,7 @@ export default function Studio() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
-        textarea::placeholder { color: #3d3d3d; }
+        textarea::placeholder { color: #8e8e8e; }
         @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
