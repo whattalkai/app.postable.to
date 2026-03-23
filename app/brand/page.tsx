@@ -1,5 +1,7 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
+import { getSession, clearSession } from "@/lib/session"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Color = { name: string; hex: string; usage: string }
@@ -56,6 +58,7 @@ function getTime() {
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 export default function BrandPage() {
+  const router = useRouter()
   const [brand, setBrand] = useState<BrandData>(DEFAULT_BRAND)
   const [msgs, setMsgs] = useState<Msg[]>([WELCOME])
   const [input, setInput] = useState("")
@@ -72,13 +75,14 @@ export default function BrandPage() {
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   useEffect(() => {
+    if (!getSession()) { router.push("/login"); return }
     try {
       const b = localStorage.getItem("wt_brand_data_v1")
       if (b) setBrand(JSON.parse(b))
       const c = localStorage.getItem("wt_brand_chat_v1")
       if (c) setMsgs(JSON.parse(c))
     } catch {}
-  }, [])
+  }, [router])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -254,6 +258,17 @@ export default function BrandPage() {
         <button onClick={saveBrand} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "inherit", fontSize: 11, fontWeight: 600, padding: "5px 14px", borderRadius: 6, border: "none", cursor: "pointer", background: saved ? "#7855FF" : "#fff", color: "#0c0c0c", transition: "all 0.2s" }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           {saved ? <span style={{ color: "#fff" }}>✓ Kaydedildi</span> : "Kaydet"}
+        </button>
+
+        <div style={S.tbDiv}/>
+
+        <button
+          onClick={() => { clearSession(); router.push("/login") }}
+          title="Çıkış yap"
+          style={{ ...S.btnGhost, color: "#6b6b6b" }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 17 21 12 16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          Çıkış
         </button>
       </div>
 

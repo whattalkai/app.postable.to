@@ -1,6 +1,8 @@
 "use client"
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { brandDataToGuide } from "@/lib/brandDataToGuide"
+import { getSession, clearSession } from "@/lib/session"
 
 type Design = {
   id: string
@@ -191,6 +193,7 @@ const STATIC_DESIGNS: Design[] = [
 ]
 
 export default function Studio() {
+  const router = useRouter()
   const [designs, setDesigns] = useState<Design[]>([])
   const [active, setActive] = useState<Design | null>(null)
   const [chatHistory, setChatHistory] = useState<ChatHistory>({})
@@ -228,8 +231,14 @@ export default function Studio() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  function handleLogout() {
+    clearSession()
+    router.push("/login")
+  }
+
   // Load from localStorage + one-time seed of static designs
   useEffect(() => {
+    if (!getSession()) { router.push("/login"); return }
     try {
       const s = localStorage.getItem("wt_designs_v3")
       let existing: Design[] = s ? JSON.parse(s) : []
@@ -507,7 +516,10 @@ export default function Studio() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.download = `${active.title.slice(0, 40)}.png`
-      a.href = url; a.click()
+      a.href = url
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch (e) { console.error("PNG export:", e) }
     finally { setExporting(null) }
@@ -545,8 +557,11 @@ export default function Studio() {
           const blob = new Blob(chunks, { type: mimeType })
           const url = URL.createObjectURL(blob)
           const a = document.createElement("a")
-          a.download = `${active.title.slice(0, 40)}.mp4`
-          a.href = url; a.click()
+          a.download = `${active.title.slice(0, 40)}.webm`
+          a.href = url
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
           setTimeout(() => URL.revokeObjectURL(url), 2000)
           resolve()
         }
@@ -687,6 +702,17 @@ export default function Studio() {
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><polygon points="23 7 16 12 23 17 23 7" fill="currentColor"/><rect x="1" y="5" width="15" height="14" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/></svg>
           )}
           {exporting === "mp4" ? `${exportProgress}%` : "MP4"}
+        </button>
+
+        <div style={S.tbDiv}/>
+
+        <button
+          onClick={handleLogout}
+          title="Çıkış yap"
+          style={{ ...S.btnGhost, color: "#6b6b6b" }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 17 21 12 16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          Çıkış
         </button>
       </div>
 
