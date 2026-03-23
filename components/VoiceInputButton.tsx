@@ -17,13 +17,13 @@ const pulseKeyframes = `
 function MicIcon({ state }: { state: VoiceState }) {
   if (state === "processing") {
     return (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ animation: "micSpin 1s linear infinite" }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ animation: "micSpin 1s linear infinite" }}>
         <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
       </svg>
     )
   }
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
       <rect x="9" y="2" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="1.8" />
       <path d="M5 10a7 7 0 0 0 14 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       <line x1="12" y1="17" x2="12" y2="22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -60,13 +60,15 @@ export function VoiceInputButton({ onTranscript, disabled, onError }: Props) {
         onClick={toggleRecording}
         disabled={disabled || isProcessing}
         title={isRecording ? "Kaydı durdur" : isProcessing ? "İşleniyor..." : "Sesle yaz"}
+        onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)" }}
+        onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent" }}
         style={{
-          width: 26,
-          height: 26,
-          borderRadius: 6,
+          width: 32,
+          height: 32,
+          borderRadius: "50%",
           background: isRecording ? "rgba(239, 68, 68, 0.15)" : "transparent",
           border: "none",
-          color: isRecording ? "#ef4444" : isProcessing ? "#f59e0b" : "#3d3d3d",
+          color: isRecording ? "#ef4444" : isProcessing ? "#f59e0b" : "#b4b4b4",
           cursor: isProcessing ? "wait" : disabled ? "not-allowed" : "pointer",
           display: "flex",
           alignItems: "center",

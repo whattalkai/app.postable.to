@@ -218,7 +218,7 @@ export default function Studio() {
   const [showCaption, setShowCaption] = useState(true)
 
   // Nav dropdown
-  const [showNav, setShowNav] = useState(false)
+
 
   // Brand guide — derived from structured brand data, never edited directly
   const [brandGuide, setBrandGuide] = useState(DEFAULT_BRAND_GUIDE)
@@ -228,6 +228,11 @@ export default function Studio() {
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  // Auto-resize textarea when input changes (e.g. from voice transcription)
+  useEffect(() => {
+    const el = inputRef.current
+    if (el) { el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 200) + "px" }
+  }, [input])
   const captionRef = useRef<HTMLTextAreaElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -616,46 +621,7 @@ export default function Studio() {
       {/* ══ TOPBAR ══ */}
       <div style={{ height: 50, background: "#141414", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", padding: "0 12px 0 10px", gap: 6, flexShrink: 0, zIndex: 100 }}>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "0 4px" }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: "#e6e6e6", letterSpacing: "-0.03em" }}>Postable</span>
-          {/* Product switcher badge */}
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setShowNav(v => !v)}
-              style={{ fontSize: 9, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.16)", padding: "2px 7px", borderRadius: 4, letterSpacing: "0.05em", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
-            >
-              STUDIO
-              <svg width="7" height="7" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            {showNav && (
-              <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 99 }} onClick={() => setShowNav(false)}/>
-                <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 100, background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, padding: 4, minWidth: 140, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#3d3d3d", letterSpacing: "0.06em", padding: "4px 8px 6px", textTransform: "uppercase" as const }}>Workspace</div>
-                  <a href="/" style={{ textDecoration: "none" }} onClick={() => setShowNav(false)}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 6, background: "rgba(255,255,255,0.06)", marginBottom: 2 }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#fff" strokeWidth="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="#fff"/><polyline points="21 15 16 10 5 21" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Studio</div>
-                        <div style={{ fontSize: 9.5, color: "#6b6b6b" }}>İçerik & Tasarım</div>
-                      </div>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{ marginLeft: "auto" }}><polyline points="20 6 9 17 4 12" stroke="#00C2A8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </div>
-                  </a>
-                  <a href="/brand" style={{ textDecoration: "none" }} onClick={() => setShowNav(false)}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 6 }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#7855FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#7855FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#e6e6e6" }}>Brand</div>
-                        <div style={{ fontSize: 9.5, color: "#6b6b6b" }}>Marka Kimliği</div>
-                      </div>
-                    </div>
-                  </a>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#e6e6e6", letterSpacing: "-0.03em", margin: "0 4px" }}>Postable</span>
 
         <button onClick={() => setShowList(v => !v)} title="Tasarım listesi" style={{ ...S.panelBtn, color: showList ? "#fff" : "#6b6b6b" }}>
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 1v14" stroke="currentColor" strokeWidth="1.3"/></svg>
@@ -665,6 +631,20 @@ export default function Studio() {
         <span style={{ fontSize: 11, color: "#6b6b6b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>
           {active ? active.slug || active.title.toLowerCase().replace(/\s+/g, "-") : "yeni-tasarım"}
         </span>
+
+        <div style={{ flex: 1 }}/>
+
+        {/* Workspace tabs */}
+        <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: 2, gap: 2 }}>
+          <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", background: "rgba(255,255,255,0.1)", color: "#fff", transition: "all 0.15s" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><polyline points="21 15 16 10 5 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            Studio
+          </a>
+          <a href="/brand" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", background: "transparent", color: "#6b6b6b", transition: "all 0.15s" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Brand
+          </a>
+        </div>
 
         <div style={{ flex: 1 }}/>
 
@@ -788,65 +768,77 @@ export default function Studio() {
           </div>
 
           <div
-            style={{ padding: "10px 12px 12px", borderTop: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}
+            style={{ padding: "8px 10px 10px", flexShrink: 0 }}
             onDrop={handleDrop}
             onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
             onDragLeave={() => setIsDragging(false)}
           >
-            {/* Attached image previews */}
-            {attachedImages.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                {attachedImages.map((src, idx) => (
-                  <div key={idx} style={{ position: "relative", width: 54, height: 54, flexShrink: 0 }}>
-                    <img src={src} alt="" style={{ width: 54, height: 54, objectFit: "cover", borderRadius: 7, border: "1px solid rgba(255,255,255,0.1)", display: "block" }} />
-                    <button
-                      onClick={() => setAttachedImages(prev => prev.filter((_, i) => i !== idx))}
-                      style={{ position: "absolute", top: -5, right: -5, width: 16, height: 16, borderRadius: "50%", background: "#333", border: "1px solid rgba(255,255,255,0.15)", color: "#ccc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, lineHeight: 1, padding: 0 }}
-                    >×</button>
-                  </div>
-                ))}
-              </div>
-            )}
             {/* Voice error toast */}
             {voiceError && (
-              <div style={{ marginBottom: 6, padding: "6px 10px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, fontSize: 11, color: "#f87171", display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ marginBottom: 6, padding: "6px 10px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 20, fontSize: 11, color: "#f87171", display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ flex: 1 }}>{voiceError}</span>
                 <button onClick={() => setVoiceError(null)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>
               </div>
             )}
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, background: isDragging ? "rgba(0,194,168,0.04)" : "#1c1c1c", border: `1px solid ${isDragging ? "rgba(0,194,168,0.5)" : "rgba(255,255,255,0.07)"}`, borderRadius: 10, padding: "7px 7px 7px 10px", transition: "border-color 0.15s" }}>
-              {/* Image attach button */}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                title="Görsel ekle"
-                style={{ width: 26, height: 26, borderRadius: 6, background: "transparent", border: "none", color: isDragging ? "#00C2A8" : "#3d3d3d", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0, transition: "color 0.15s" }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><polyline points="21 15 16 10 5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-              {/* Voice input button */}
-              <VoiceInputButton
-                onTranscript={(text) => setInput(prev => prev ? prev + " " + text : text)}
-                disabled={loading}
-                onError={setVoiceError}
-              />
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 80) + "px" }}
-                onKeyDown={handleKey}
-                onPaste={handlePaste}
-                placeholder={isDragging ? "Görseli bırak…" : "Yaz veya mikrofona bas…"}
-                rows={1}
-                disabled={loading}
-                style={{ flex: 1, fontFamily: "inherit", fontSize: 12, color: "#e6e6e6", background: "transparent", border: "none", outline: "none", resize: "none", minHeight: 30, maxHeight: 80, lineHeight: 1.5, padding: 0 }}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={loading || (!input.trim() && attachedImages.length === 0)}
-                style={{ width: 30, height: 30, borderRadius: 7, background: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: (loading || (!input.trim() && attachedImages.length === 0)) ? 0.5 : 1 }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="#0c0c0c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22l-4-9-9-4 20-7z" stroke="#0c0c0c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
+            {/* ChatGPT-style pill input bar */}
+            <div style={{ display: "flex", flexDirection: "column", background: isDragging ? "rgba(0,194,168,0.04)" : "#2f2f2f", border: `1px solid ${isDragging ? "rgba(0,194,168,0.5)" : "rgba(255,255,255,0.08)"}`, borderRadius: 24, padding: "0", transition: "border-color 0.15s", overflow: "hidden" }}>
+              {/* Attached image previews — inside the pill */}
+              {attachedImages.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "10px 14px 0" }}>
+                  {attachedImages.map((src, idx) => (
+                    <div key={idx} style={{ position: "relative", width: 54, height: 54, flexShrink: 0 }}>
+                      <img src={src} alt="" style={{ width: 54, height: 54, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", display: "block" }} />
+                      <button
+                        onClick={() => setAttachedImages(prev => prev.filter((_, i) => i !== idx))}
+                        style={{ position: "absolute", top: -5, right: -5, width: 16, height: 16, borderRadius: "50%", background: "#333", border: "1px solid rgba(255,255,255,0.15)", color: "#ccc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, lineHeight: 1, padding: 0 }}
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Textarea row */}
+              <div style={{ padding: "12px 14px 0 14px" }}>
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px" }}
+                  onKeyDown={handleKey}
+                  onPaste={handlePaste}
+                  placeholder={isDragging ? "Görseli bırak…" : "Mesaj yazın"}
+                  rows={1}
+                  disabled={loading}
+                  style={{ width: "100%", fontFamily: "inherit", fontSize: 15, color: "#ececec", background: "transparent", border: "none", outline: "none", resize: "none", minHeight: 24, maxHeight: 200, lineHeight: 1.6, padding: 0 }}
+                />
+              </div>
+              {/* Bottom action row: + on left, mic & send on right */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px 8px" }}>
+                {/* Left: attach button */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Görsel ekle"
+                  style={{ width: 32, height: 32, borderRadius: "50%", background: "transparent", border: "none", color: isDragging ? "#00C2A8" : "#b4b4b4", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0, transition: "color 0.15s, background 0.15s" }}
+                  onMouseEnter={e => { (e.target as HTMLElement).style.background = "rgba(255,255,255,0.08)" }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.background = "transparent" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </button>
+                {/* Right: mic + send */}
+                <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <VoiceInputButton
+                    onTranscript={(text) => setInput(prev => prev ? prev + " " + text : text)}
+                    disabled={loading}
+                    onError={setVoiceError}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={loading || (!input.trim() && attachedImages.length === 0)}
+                    title="Gönder"
+                    style={{ width: 32, height: 32, borderRadius: "50%", background: (loading || (!input.trim() && attachedImages.length === 0)) ? "#676767" : "#fff", border: "none", cursor: (loading || (!input.trim() && attachedImages.length === 0)) ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke={(loading || (!input.trim() && attachedImages.length === 0)) ? "#929292" : "#0c0c0c"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                </div>
+              </div>
             </div>
             <input
               ref={fileInputRef}
@@ -856,7 +848,6 @@ export default function Studio() {
               style={{ display: "none" }}
               onChange={e => { Array.from(e.target.files || []).forEach(processImageFile); e.target.value = "" }}
             />
-            <div style={{ fontSize: 9.5, color: "#3d3d3d", textAlign: "center", marginTop: 7 }}>Enter gönderin · Mikrofon · Görsel yapıştır veya sürükle</div>
           </div>
         </div>
 
