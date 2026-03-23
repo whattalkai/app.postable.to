@@ -2,13 +2,13 @@
 
 ## To Do
 
-- **Move Studio/Brand workspace dropdown to middle navbar** — Currently the workspace selector (Studio, Brand) is in a dropdown on the left side. Move it to the middle/center navbar area, similar to Claude's tab-style design (like the Chat/Cowork/Code tabs in the screenshot). Should look like inline tab buttons rather than a dropdown menu.
-
 <!-- Add new tasks here -->
 
 ## In Progress
 
-- **Fix MP4/PNG export on production (Vercel)** — `@sparticuz/chromium` binary gets stripped at deploy time. Switching to `@sparticuz/chromium-min` which downloads from a URL at runtime.
+- **Fix AI errors in chat dialogue** — Chat shows 401 authentication errors ("invalid x-api-key"). Investigate API route and fix the auth configuration.
+- **Fix MP4 export start frame** — Video starts mid-animation. After `setContent`, animations have already progressed. Fix: reset all animations to frame 0 before capture using `document.getAnimations().forEach(a => { a.cancel(); a.play() })`.
+
 
 ## Self Review
 
@@ -16,6 +16,7 @@
 
 ## In Review
 
+- **Move Studio/Brand workspace dropdown to middle navbar** — Replaced the dropdown menu with Claude-style inline tab buttons centered in the topbar. Studio page shows Studio active (white), Brand page shows Brand active (purple). Removed unused `showNav` state from both pages. Files changed: `app/page.tsx`, `app/brand/page.tsx`.
 - **Add Voice Input (Speech-to-Text) to AI Chat in StudioPage** — Mic button with Whisper API, Turkish/English support, tap-to-toggle recording, transcribed text inserted into chat input. Files created: `app/api/transcribe/route.ts`, `lib/services/speechToText.ts`, `lib/hooks/useVoiceInput.ts`, `components/VoiceInputButton.tsx`. Integrated into `app/page.tsx` chat input bar. Requires `OPENAI_API_KEY` env var.
 
 <!-- Tasks confirmed working, waiting for Cemre's approval -->

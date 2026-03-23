@@ -39,6 +39,15 @@ export async function POST(req: Request) {
     // Inject the HTML and wait for fonts + network to settle
     await page.setContent(html, { waitUntil: "networkidle0", timeout: 15000 })
 
+    // Reset all animations to frame 0 — networkidle0 can take time during
+    // which CSS animations have already progressed
+    await page.evaluate(() => {
+      document.getAnimations().forEach(anim => {
+        anim.cancel()
+        anim.play()
+      })
+    })
+
     if (mode === "png") {
       // Wait for animations to finish (designs animate over ~3-4 seconds)
       await new Promise(r => setTimeout(r, 4000))
