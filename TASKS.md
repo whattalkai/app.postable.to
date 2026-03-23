@@ -6,14 +6,14 @@
 
 ## In Progress
 
-- **Add Voice Input (Speech-to-Text) to AI Chat in StudioPage** — Mic button with Whisper API, Turkish/English support, tap-to-toggle recording, transcribed text inserted into chat input.
-- **Fix MP4 export on production (Vercel)** — Puppeteer can't find Chrome on serverless. Fixing with `@sparticuz/chromium` + `puppeteer-core`.
-
 ## Self Review
 
 <!-- Tasks being self-reviewed -->
 
 ## In Review
+
+- **Add Voice Input (Speech-to-Text) to AI Chat in StudioPage** — Mic button with Whisper API, Turkish/English support, tap-to-toggle recording, transcribed text inserted into chat input. Files created: `app/api/transcribe/route.ts`, `lib/services/speechToText.ts`, `lib/hooks/useVoiceInput.ts`, `components/VoiceInputButton.tsx`. Integrated into `app/page.tsx` chat input bar. Requires `OPENAI_API_KEY` env var.
+- **Fix MP4 export on production (Vercel)** — Replaced `puppeteer` with `puppeteer-core` + `@sparticuz/chromium`. Local export API returns 200. Files changed: `app/api/export/route.ts`, `next.config.ts`, `package.json`. Needs Cemre to test MP4 download on `app.postable.to` after Vercel deploys.
 
 <!-- Tasks confirmed working, waiting for Cemre's approval -->
 

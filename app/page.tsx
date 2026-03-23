@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { brandDataToGuide } from "@/lib/brandDataToGuide"
 import { getSession, clearSession } from "@/lib/session"
+import { VoiceInputButton } from "@/components/VoiceInputButton"
 
 type Design = {
   id: string
@@ -209,6 +210,7 @@ export default function Studio() {
   const [exportProgress, setExportProgress] = useState(0)
   const [attachedImages, setAttachedImages] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
 
   // Panel visibility
   const [showList, setShowList] = useState(true)
@@ -805,6 +807,13 @@ export default function Studio() {
                 ))}
               </div>
             )}
+            {/* Voice error toast */}
+            {voiceError && (
+              <div style={{ marginBottom: 6, padding: "6px 10px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, fontSize: 11, color: "#f87171", display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ flex: 1 }}>{voiceError}</span>
+                <button onClick={() => setVoiceError(null)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "flex-end", gap: 6, background: isDragging ? "rgba(0,194,168,0.04)" : "#1c1c1c", border: `1px solid ${isDragging ? "rgba(0,194,168,0.5)" : "rgba(255,255,255,0.07)"}`, borderRadius: 10, padding: "7px 7px 7px 10px", transition: "border-color 0.15s" }}>
               {/* Image attach button */}
               <button
@@ -814,13 +823,19 @@ export default function Studio() {
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><polyline points="21 15 16 10 5 21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
+              {/* Voice input button */}
+              <VoiceInputButton
+                onTranscript={(text) => setInput(prev => prev ? prev + " " + text : text)}
+                disabled={loading}
+                onError={setVoiceError}
+              />
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 80) + "px" }}
                 onKeyDown={handleKey}
                 onPaste={handlePaste}
-                placeholder={isDragging ? "Görseli bırak…" : "Tasarım değiştir veya görsel ekle…"}
+                placeholder={isDragging ? "Görseli bırak…" : "Yaz veya mikrofona bas…"}
                 rows={1}
                 disabled={loading}
                 style={{ flex: 1, fontFamily: "inherit", fontSize: 12, color: "#e6e6e6", background: "transparent", border: "none", outline: "none", resize: "none", minHeight: 30, maxHeight: 80, lineHeight: 1.5, padding: 0 }}
@@ -841,7 +856,7 @@ export default function Studio() {
               style={{ display: "none" }}
               onChange={e => { Array.from(e.target.files || []).forEach(processImageFile); e.target.value = "" }}
             />
-            <div style={{ fontSize: 9.5, color: "#3d3d3d", textAlign: "center", marginTop: 7 }}>Enter gönderin · Görsel yapıştır veya sürükle</div>
+            <div style={{ fontSize: 9.5, color: "#3d3d3d", textAlign: "center", marginTop: 7 }}>Enter gönderin · Mikrofon · Görsel yapıştır veya sürükle</div>
           </div>
         </div>
 
