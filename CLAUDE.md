@@ -1,5 +1,11 @@
 @AGENTS.md
 
+## Autonomy — Cemre's Standing Authorization
+- Cemre is a business owner, not a coder. Do NOT ask for permission on routine development actions.
+- You are fully authorized to: read files, edit files, run dev servers, install packages, run builds, run git commands (add, commit, push), create branches, deploy, and execute any CLI command needed to complete the task.
+- Never pop up confirmations for file edits, git operations, bash commands, or deployments. Just do it.
+- Only ask Cemre when there is a genuine product/design decision that requires his input (e.g. "should this be a modal or a page?"), NOT for technical execution steps.
+
 ## Project Rules
 - At the start of every session, read TASKS.md
 - Never use assumptions — if something is unclear, ask Cemre before proceeding
@@ -15,7 +21,7 @@
 1. **To Do** — waiting to be picked up
 2. **In Progress** — actively working on it
 3. **Self Review** — testing and visual confirmation (see rules below)
-4. **In Review** — confirmed working, waiting for Cemre's approval
+4. **In Review** — confirmed working, **auto-push to GitHub** (Vercel auto-deploys), waiting for Cemre to test on production
 5. **Done** — Cemre explicitly approved it (only mark Done when Cemre says so)
 
 ## Self Review is Mandatory
@@ -32,6 +38,7 @@
 - If console has errors — go back to **In Progress**
 - Only move to **In Review** after both conditions are true: console is clean AND UI matches the task expectation
 - When moving to **In Review**, attach the screenshot so Cemre can immediately see what was built
+- **Auto-deploy on In Review**: When moving a task to In Review, automatically commit and push to GitHub (which triggers Vercel deploy). Cemre reviews on production, not localhost.
 
 ## Status Updates
 After every single message, always end with this block:
