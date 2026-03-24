@@ -208,6 +208,9 @@ export default function Studio() {
   const [newCount, setNewCount] = useState(0)
   const [exporting, setExporting] = useState<"png" | "mp4" | null>(null)
   const [exportProgress, setExportProgress] = useState(0)
+  const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [exportStatus, setExportStatus] = useState("")
+  const [exportError, setExportError] = useState<string | null>(null)
   const [attachedImages, setAttachedImages] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [voiceError, setVoiceError] = useState<string | null>(null)
@@ -511,6 +514,9 @@ export default function Studio() {
   async function exportPng() {
     if (!active || exporting || (!active.html && !active.src)) return
     setExporting("png")
+    setExportModalOpen(true)
+    setExportError(null)
+    setExportStatus("Rendering design…")
     try {
       const html = await getActiveHtml()
       const res = await fetch("/api/export", {
@@ -519,6 +525,7 @@ export default function Studio() {
         body: JSON.stringify({ html, mode: "png" }),
       })
       if (!res.ok) throw new Error(await res.text())
+      setExportStatus("Preparing download…")
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -528,14 +535,21 @@ export default function Studio() {
       a.click()
       document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(url), 1000)
-    } catch (e) { console.error("PNG export:", e) }
+      setExportStatus("PNG saved!")
+    } catch (e) {
+      console.error("PNG export:", e)
+      setExportError(e instanceof Error ? e.message : String(e))
+    }
     finally { setExporting(null) }
   }
 
   async function exportMp4() {
     if (!active || exporting || (!active.html && !active.src)) return
     setExporting("mp4")
-    setExportProgress(10) // show activity while server renders
+    setExportModalOpen(true)
+    setExportError(null)
+    setExportProgress(10)
+    setExportStatus("Rendering frames on server…")
     try {
       const html = await getActiveHtml()
       const res = await fetch("/api/export", {
@@ -546,7 +560,8 @@ export default function Studio() {
       if (!res.ok) throw new Error(await res.text())
       const { frames, fps: serverFps } = await res.json() as { frames: string[], fps: number }
 
-      setExportProgress(50) // frames received, now encode to MP4
+      setExportProgress(50)
+      setExportStatus("Encoding H.264…")
 
       // Encode frames to true H.264 MP4 using Web Codecs API + mp4-muxer
       const { Muxer, ArrayBufferTarget } = await import("mp4-muxer")
@@ -594,6 +609,8 @@ export default function Studio() {
 
       await encoder.flush()
       if (encodeError) throw encodeError
+      setExportStatus("Finalizing MP4…")
+      setExportProgress(97)
       muxer.finalize()
 
       const buffer = (muxer.target as InstanceType<typeof ArrayBufferTarget>).buffer
@@ -607,7 +624,11 @@ export default function Studio() {
       document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(url), 2000)
       setExportProgress(100)
-    } catch (e) { console.error("MP4 export:", e) }
+      setExportStatus("MP4 saved!")
+    } catch (e) {
+      console.error("MP4 export:", e)
+      setExportError(e instanceof Error ? e.message : String(e))
+    }
     finally { setExporting(null); setExportProgress(0) }
   }
 
@@ -638,6 +659,84 @@ export default function Studio() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#0c0c0c", color: "#e6e6e6", fontFamily: "'Inter', -apple-system, sans-serif", overflow: "hidden" }}>
+
+      {/* ══ EXPORT MODAL ══ */}
+      {exportModalOpen && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          background: "rgba(0,0,0,0.7)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            background: "#141414",
+            border: "1px solid #2a2a2a",
+            borderRadius: 14,
+            padding: "28px 32px",
+            width: 360,
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+          }}>
+            {/* Title */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {exporting === "png" || (!exporting && !exportError && exportStatus === "PNG saved!") ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#e5e5e5" strokeWidth="2"/><circle cx="8.5" cy="8.5" r="1.5" stroke="#e5e5e5" strokeWidth="2"/><polyline points="21 15 16 10 5 21" stroke="#e5e5e5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polygon points="23 7 16 12 23 17 23 7" fill="#e5e5e5"/><rect x="1" y="5" width="15" height="14" rx="2" stroke="#e5e5e5" strokeWidth="2" fill="none"/></svg>
+              )}
+              <span style={{ color: "#e5e5e5", fontSize: 14, fontWeight: 600 }}>
+                {exporting === "png" || exportStatus === "PNG saved!" ? "Exporting PNG" : "Exporting MP4"}
+              </span>
+            </div>
+
+            {/* Progress bar (MP4 only) */}
+            {(exporting === "mp4" || exportStatus === "MP4 saved!") && !exportError && (
+              <div style={{ background: "#222", borderRadius: 6, height: 6, overflow: "hidden" }}>
+                <div style={{
+                  height: "100%",
+                  width: `${exportProgress}%`,
+                  background: exportProgress === 100 ? "#3ecf8e" : "#00C2A8",
+                  borderRadius: 6,
+                  transition: "width 0.3s ease",
+                }} />
+              </div>
+            )}
+
+            {/* Status */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {exportError ? (
+                <span style={{ color: "#f87171", fontSize: 12 }}>⚠ {exportError}</span>
+              ) : exportStatus.includes("saved!") ? (
+                <span style={{ color: "#3ecf8e", fontSize: 13, fontWeight: 500 }}>✓ {exportStatus}</span>
+              ) : (
+                <>
+                  <div style={{ width: 10, height: 10, border: "1.5px solid #444", borderTopColor: "#00C2A8", borderRadius: "50%", animation: "spin 0.75s linear infinite", flexShrink: 0 }} />
+                  <span style={{ color: "#888", fontSize: 13 }}>{exportStatus}</span>
+                </>
+              )}
+            </div>
+
+            {/* Close button — only active when done or error */}
+            <button
+              onClick={() => { setExportModalOpen(false); setExportError(null) }}
+              disabled={!!exporting}
+              style={{
+                marginTop: 4,
+                padding: "8px 0",
+                background: exporting ? "#1a1a1a" : "#222",
+                color: exporting ? "#444" : "#e5e5e5",
+                border: "1px solid #2a2a2a",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: exporting ? "not-allowed" : "pointer",
+              }}
+            >
+              {exporting ? "Please wait…" : "Close"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ══ TOPBAR ══ */}
       <div style={{ height: 50, background: "#141414", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", padding: "0 12px 0 10px", gap: 6, flexShrink: 0, zIndex: 100 }}>
