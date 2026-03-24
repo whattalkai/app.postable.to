@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { DoneButton } from "./DoneButton"
 
 type Task = {
@@ -10,34 +10,41 @@ type Task = {
   iterations: number
 }
 
+/** Split body by iteration markers: ~~iter:N~~ */
+function parseIterations(body: string): { version: number; text: string }[] {
+  const marker = /~~iter:(\d+)~~/g
+  const parts: { version: number; text: string }[] = []
+  let lastIdx = 0
+  let lastVer = 0
+  let match: RegExpExecArray | null
+
+  while ((match = marker.exec(body)) !== null) {
+    const before = body.slice(lastIdx, match.index).trim()
+    if (before) parts.push({ version: lastVer, text: before })
+    lastVer = parseInt(match[1], 10)
+    lastIdx = match.index + match[0].length
+  }
+
+  const remaining = body.slice(lastIdx).trim()
+  if (remaining) parts.push({ version: lastVer, text: remaining })
+
+  return parts.reverse() // latest first
+}
+
 export function TaskCard({
   task,
   colTitle,
   dotColor,
+  onOptimisticDone,
 }: {
   task: Task
   colTitle: string
   dotColor: string
+  onOptimisticDone?: (taskKey: string) => void
 }) {
   const [open, setOpen] = useState(false)
-  const [summary, setSummary] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!open || summary !== null) return
-    setLoading(true)
-    fetch("/api/tasks-chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: `${task.id} numaralı görevi bana kısaca özetle. Teknik detayları basit ve anlaşılır şekilde açıkla. Ne yapıldı, neden yapıldı, sonuç ne oldu — 3-5 cümle ile. Emoji kullan.`,
-      }),
-    })
-      .then(r => r.json())
-      .then(data => setSummary(data.reply || null))
-      .catch(() => setSummary(null))
-      .finally(() => setLoading(false))
-  }, [open, summary, task.id])
+  const iterations = parseIterations(task.body)
+  const taskKey = task.id ? `${task.id} ${task.title}` : task.title
 
   return (
     <>
@@ -105,12 +112,12 @@ export function TaskCard({
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
           }}>
-            {task.body}
+            {iterations[0]?.text || task.body}
           </span>
         )}
         {colTitle === "In Review" && (
           <div onClick={e => e.stopPropagation()}>
-            <DoneButton taskTitle={task.id ? `${task.id} ${task.title}` : task.title} />
+            <DoneButton taskTitle={taskKey} onOptimisticDone={onOptimisticDone} />
           </div>
         )}
       </div>
@@ -134,8 +141,8 @@ export function TaskCard({
               border: "1px solid #2a2a2a",
               borderRadius: 14,
               width: "100%",
-              maxWidth: 600,
-              maxHeight: "80vh",
+              maxWidth: 640,
+              maxHeight: "85vh",
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
@@ -220,42 +227,57 @@ export function TaskCard({
               </button>
             </div>
 
-            {/* Modal body */}
+            {/* Modal body — full dev explanation per iteration, latest first */}
             <div style={{
               padding: "18px 22px 22px",
               overflowY: "auto",
               flex: 1,
             }}>
-              {loading ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#666", fontSize: 13 }}>
-                  <span style={{
-                    width: 14, height: 14, borderRadius: "50%",
-                    border: "2px solid #333", borderTopColor: dotColor,
-                    animation: "spin 0.8s linear infinite",
-                  }} />
-                  Özet hazırlanıyor...
-                  <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-                </div>
-              ) : summary ? (
-                <div style={{
-                  color: "#ccc",
-                  fontSize: 13,
-                  lineHeight: 1.75,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}>
-                  {formatBody(summary)}
-                </div>
-              ) : task.body ? (
-                <div style={{
-                  color: "#ccc",
-                  fontSize: 13,
-                  lineHeight: 1.75,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}>
-                  {formatBody(task.body)}
-                </div>
+              {iterations.length > 0 ? (
+                iterations.map((iter, idx) => (
+                  <div key={idx} style={{
+                    marginBottom: idx < iterations.length - 1 ? 16 : 0,
+                    paddingBottom: idx < iterations.length - 1 ? 16 : 0,
+                    borderBottom: idx < iterations.length - 1 ? "1px solid #222" : "none",
+                  }}>
+                    {iterations.length > 1 && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        marginBottom: 10,
+                      }}>
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: idx === 0 ? dotColor : "#555",
+                          background: idx === 0 ? `${dotColor}15` : "rgba(255,255,255,0.03)",
+                          border: `1px solid ${idx === 0 ? `${dotColor}30` : "rgba(255,255,255,0.06)"}`,
+                          borderRadius: 4,
+                          padding: "2px 8px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                        }}>
+                          {idx === 0 ? "Latest" : `v${iter.version || idx + 1}`}
+                        </span>
+                        {idx === 0 && iterations.length > 1 && (
+                          <span style={{ fontSize: 10, color: "#444" }}>
+                            ({iterations.length - 1} earlier)
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div style={{
+                      color: idx === 0 ? "#ccc" : "#777",
+                      fontSize: 13,
+                      lineHeight: 1.75,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}>
+                      {formatBody(iter.text)}
+                    </div>
+                  </div>
+                ))
               ) : (
                 <p style={{ color: "#3d3d3d", fontSize: 13 }}>
                   No details available for this task.
@@ -264,7 +286,7 @@ export function TaskCard({
 
               {colTitle === "In Review" && (
                 <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #222" }} onClick={e => e.stopPropagation()}>
-                  <DoneButton taskTitle={task.id ? `${task.id} ${task.title}` : task.title} />
+                  <DoneButton taskTitle={taskKey} onOptimisticDone={onOptimisticDone} />
                 </div>
               )}
             </div>

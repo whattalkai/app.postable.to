@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { markAsDone } from "./actions"
 
-export function DoneButton({ taskTitle }: { taskTitle: string }) {
+export function DoneButton({ taskTitle, onOptimisticDone }: { taskTitle: string; onOptimisticDone?: (taskKey: string) => void }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
@@ -12,11 +12,12 @@ export function DoneButton({ taskTitle }: { taskTitle: string }) {
 
   const handleClick = () => {
     setError(null)
+    // Move card immediately in UI, API call runs in background
+    onOptimisticDone?.(taskTitle)
     startTransition(async () => {
       const result = await markAsDone(taskTitle)
       if (result.ok) {
         setDone(true)
-        // Force page refresh so the card moves to Done column
         router.refresh()
       } else {
         setError(result.error ?? "Failed to move task")

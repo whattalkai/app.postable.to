@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { TaskCard } from "./TaskCard"
 import { VoiceInputButton } from "@/components/VoiceInputButton"
@@ -23,6 +23,7 @@ function getTime() {
 
 export function TasksBoard({ columns }: { columns: Column[] }) {
   const router = useRouter()
+  const [optimisticallyDone, setOptimisticallyDone] = useState<Set<string>>(new Set())
   const [msgs, setMsgs] = useState<Msg[]>([WELCOME_MSG])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -34,6 +35,29 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Clear optimistic state when server data refreshes
+  useEffect(() => {
+    setOptimisticallyDone(new Set())
+  }, [columns])
+
+  const handleOptimisticDone = useCallback((taskKey: string) => {
+    setOptimisticallyDone(prev => new Set([...prev, taskKey]))
+  }, [])
+
+  // Derive display columns: move optimistically-done tasks to Done immediately
+  const taskKey = (t: Task) => t.id ? `${t.id} ${t.title}` : t.title
+  const displayColumns = columns.map(col => {
+    if (col.title === "In Review") {
+      return { ...col, tasks: col.tasks.filter(t => !optimisticallyDone.has(taskKey(t))) }
+    }
+    if (col.title === "Done") {
+      const movedTasks = (columns.find(c => c.title === "In Review")?.tasks ?? [])
+        .filter(t => optimisticallyDone.has(taskKey(t)))
+      return { ...col, tasks: [...movedTasks, ...col.tasks] }
+    }
+    return col
+  })
 
   // Load chat history from localStorage
   useEffect(() => {
@@ -327,7 +351,7 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
             gridTemplateColumns: "repeat(4, minmax(200px, 1fr))",
             gap: 12,
           }}>
-            {columns.map(col => (
+            {displayColumns.map(col => (
               <div key={col.title} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 200 }}>
                 <div style={{
                   display: "flex", alignItems: "center", gap: 8,
@@ -348,7 +372,7 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
                     <div style={{ padding: "20px 12px", borderRadius: 8, border: "1px dashed #222", color: "#333", fontSize: 12, textAlign: "center" }}>Empty</div>
                   ) : (
                     col.tasks.map((task, i) => (
-                      <TaskCard key={i} task={task} colTitle={col.title} dotColor={col.dot} />
+                      <TaskCard key={i} task={task} colTitle={col.title} dotColor={col.dot} onOptimisticDone={handleOptimisticDone} />
                     ))
                   )}
                 </div>
