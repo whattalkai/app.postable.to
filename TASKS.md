@@ -14,6 +14,8 @@
 
 <!-- #23 moved to In Progress -->
 
+- **#24 Fix: Task sayfasında "Mark as Done" butonu gecikmeli taşıyor** — Interview sırasında fark edildi. Task sayfasında bir göreve "Mark as Done" butonuna basıldığında, görev hemen Done sütununa taşınmıyor — belirli bir gecikme sonra taşınıyor. Kullanıcı deneyimi açısından aksiyon anında yansımalı. Optimistic UI update eklenmeli: butona basıldığı anda görev arayüzde Done'a taşınmalı, API isteği arka planda tamamlanmalı.
+
 <!-- Add new tasks here -->
 
 ## In Progress
