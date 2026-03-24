@@ -11,6 +11,9 @@ const EXTRA_ARGS = [
   "--disable-web-security",
   "--disable-features=IsolateOrigins,site-per-process",
   "--allow-running-insecure-content",
+  "--disable-background-timer-throttling",
+  "--disable-renderer-backgrounding",
+  "--disable-backgrounding-occluded-windows",
 ]
 
 async function launchBrowser() {
@@ -110,6 +113,9 @@ export async function POST(req: Request) {
             anim.currentTime = t
           })
         }, currentTimeMs)
+
+        // Wait for the browser to repaint after seeking before capturing
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(r)))
 
         const screenshot = await page.screenshot({
           type: "jpeg",
