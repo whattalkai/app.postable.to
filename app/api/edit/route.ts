@@ -107,17 +107,18 @@ export async function POST(req: Request) {
     }
 
     // ── SAFEGUARD: never return broken/empty/truncated HTML ──
-    const hasDoctype = html.toLowerCase().includes("<!doctype") || html.toLowerCase().includes("<html")
-    const hasBody = html.toLowerCase().includes("<body")
-    const tooShort = html.length < existingHtml.length * 0.3 // less than 30% of original = suspicious
+    const lowerHtml = html.toLowerCase()
+    const hasStructure = lowerHtml.includes("<!doctype") || lowerHtml.includes("<html") || lowerHtml.includes("<body") || lowerHtml.includes("<div")
+    const tooShort = html.length < existingHtml.length * 0.15 // less than 15% of original = suspicious
 
-    if (!html || !hasDoctype || !hasBody || tooShort) {
+    if (!html || !hasStructure || tooShort) {
       console.error("Edit safeguard triggered:", {
         htmlLength: html.length,
         originalLength: existingHtml.length,
-        hasDoctype,
-        hasBody,
+        ratio: html.length / existingHtml.length,
+        hasStructure,
         tooShort,
+        htmlPreview: html.substring(0, 200),
       })
       return Response.json({
         html: existingHtml,

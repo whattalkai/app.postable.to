@@ -18,14 +18,14 @@
 
 ## In Progress
 
-- **#25 Fix: Edit safeguard too strict — blocks valid AI edits** — The safety check added in #14 was rejecting valid edits. It required BOTH `<!doctype`/`<html>` AND `<body>` tags — if AI returned HTML missing any one, edit was rejected. Also the 30% length threshold was too aggressive. Fix: relaxed to require ANY structural tag (`<!doctype`, `<html>`, `<body>`, or `<div>`), reduced length threshold from 30% to 15%, added better debug logging with HTML preview.
-
 
 ## Self Review
 
 <!-- Tasks being self-reviewed -->
 
 ## In Review
+
+- **#25 Fix: Edit safeguard too strict — blocks valid AI edits** — The safety check added in #14 was rejecting valid edits. It required BOTH `<!doctype`/`<html>` AND `<body>` tags — if AI returned HTML missing any one, edit was rejected. Also the 30% length threshold was too aggressive. Fix: relaxed to require ANY structural tag (`<!doctype`, `<html>`, `<body>`, or `<div>`), reduced length threshold from 30% to 15%, added better debug logging with HTML preview. File: `app/api/edit/route.ts`.
 
 - **#24 Fix: Task sayfasında "Mark as Done" butonu gecikmeli taşıyor** — Optimistic UI eklendi. Butona basıldığı anda görev arayüzde Done kolonuna taşınıyor; GitHub API isteği arka planda tamamlanıyor. `TasksBoard` optimisticallyDone state tutuyor, `displayColumns` bu state'e göre türetiliyor. `DoneButton` onOptimisticDone callback'ini anında tetikliyor, `router.refresh()` sunucu verisiyle senkronize ediyor.
 
