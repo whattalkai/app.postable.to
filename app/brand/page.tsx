@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { getSession, clearSession } from "@/lib/session"
+import { getSession, signOut } from "@/lib/session"
 import { VoiceInputButton } from "@/components/VoiceInputButton"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ export default function BrandPage() {
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   useEffect(() => {
-    if (!getSession()) { router.push("/login"); return }
+    getSession().then(s => { if (!s) { router.push("/login"); return } })
     try {
       const b = localStorage.getItem("wt_brand_data_v1")
       if (b) setBrand(JSON.parse(b))
@@ -247,7 +247,7 @@ export default function BrandPage() {
         <div style={S.tbDiv}/>
 
         <button
-          onClick={() => { clearSession(); router.push("/login") }}
+          onClick={async () => { await signOut(); router.push("/login") }}
           title="Çıkış yap"
           style={{ ...S.btnGhost, color: "#6b6b6b" }}
         >
