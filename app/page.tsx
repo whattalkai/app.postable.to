@@ -516,16 +516,17 @@ export default function Studio() {
     setExporting("png")
     setExportModalOpen(true)
     setExportError(null)
-    setExportStatus("Hazırlanıyor…")
+    setExportProgress(10)
     try {
       const html = await getActiveHtml()
+      setExportProgress(30)
       const res = await fetch("/api/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ html, mode: "png" }),
       })
       if (!res.ok) throw new Error(await res.text())
-      setExportStatus("İndirme hazırlanıyor…")
+      setExportProgress(80)
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -535,12 +536,13 @@ export default function Studio() {
       a.click()
       document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(url), 1000)
+      setExportProgress(100)
       setExportStatus("PNG kaydedildi!")
     } catch (e) {
       console.error("PNG export:", e)
       setExportError(e instanceof Error ? e.message : String(e))
     }
-    finally { setExporting(null) }
+    finally { setExporting(null); setExportProgress(0) }
   }
 
   async function exportMp4() {
@@ -689,8 +691,8 @@ export default function Studio() {
               </span>
             </div>
 
-            {/* Progress bar (MP4 only) */}
-            {(exporting === "mp4" || exportStatus === "MP4 kaydedildi!") && !exportError && (
+            {/* Progress bar */}
+            {!exportError && (
               <div style={{ background: "#222", borderRadius: 6, height: 6, overflow: "hidden" }}>
                 <div style={{
                   height: "100%",
@@ -706,12 +708,12 @@ export default function Studio() {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {exportError ? (
                 <span style={{ color: "#f87171", fontSize: 12 }}>⚠ {exportError}</span>
-              ) : exportStatus.includes("kaydedildi!") ? (
+              ) : exportProgress === 100 ? (
                 <span style={{ color: "#3ecf8e", fontSize: 13, fontWeight: 500 }}>✓ {exportStatus}</span>
               ) : (
                 <>
                   <div style={{ width: 10, height: 10, border: "1.5px solid #444", borderTopColor: "#00C2A8", borderRadius: "50%", animation: "spin 0.75s linear infinite", flexShrink: 0 }} />
-                  <span style={{ color: "#888", fontSize: 13 }}>{exportStatus}</span>
+                  <span style={{ color: "#888", fontSize: 13, fontWeight: 600 }}>{exportProgress}%</span>
                 </>
               )}
             </div>
