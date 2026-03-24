@@ -4,7 +4,7 @@ import { DoneButton } from "./DoneButton"
 
 type Column = {
   title: string
-  tasks: { title: string; body: string }[]
+  tasks: { id: string; title: string; body: string }[]
   color: string
   dot: string
 }
@@ -30,7 +30,15 @@ function parseTasks(md: string): Column[] {
     const taskMatches = taskLines.match(/^- \*\*(.+?)\*\*(.*)$/gm) || []
     for (const match of taskMatches) {
       const m = match.match(/^- \*\*(.+?)\*\*\s*—?\s*(.*)$/)
-      if (m) col.tasks.push({ title: m[1].trim(), body: m[2].trim() })
+      if (m) {
+        const raw = m[1].trim()
+        const idMatch = raw.match(/^(#\d+)\s+(.+)$/)
+        col.tasks.push({
+          id: idMatch ? idMatch[1] : "",
+          title: idMatch ? idMatch[2] : raw,
+          body: m[2].trim(),
+        })
+      }
     }
   }
 
@@ -127,15 +135,28 @@ export default function TasksPage() {
                     flexDirection: "column",
                     gap: 6,
                   }}>
-                    <span style={{
-                      color: col.title === "Done" ? "#555" : "#e5e5e5",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      lineHeight: 1.4,
-                      textDecoration: col.title === "Done" ? "line-through" : "none",
-                    }}>
-                      {task.title}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                      {task.id && (
+                        <span style={{
+                          color: "#444",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          fontFamily: "monospace",
+                          flexShrink: 0,
+                        }}>
+                          {task.id}
+                        </span>
+                      )}
+                      <span style={{
+                        color: col.title === "Done" ? "#555" : "#e5e5e5",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        lineHeight: 1.4,
+                        textDecoration: col.title === "Done" ? "line-through" : "none",
+                      }}>
+                        {task.title}
+                      </span>
+                    </div>
                     {task.body && (
                       <span style={{
                         color: "#555",
@@ -150,7 +171,7 @@ export default function TasksPage() {
                       </span>
                     )}
                     {col.title === "In Review" && (
-                      <DoneButton taskTitle={task.title} />
+                      <DoneButton taskTitle={task.id ? `${task.id} ${task.title}` : task.title} />
                     )}
                   </div>
                 ))
