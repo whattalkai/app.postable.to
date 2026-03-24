@@ -542,7 +542,7 @@ export default function Studio() {
       console.error("PNG export:", e)
       setExportError(e instanceof Error ? e.message : String(e))
     }
-    finally { setExporting(null); setExportProgress(0) }
+    finally { setExporting(null) }
   }
 
   async function exportMp4() {
@@ -631,7 +631,7 @@ export default function Studio() {
       console.error("MP4 export:", e)
       setExportError(e instanceof Error ? e.message : String(e))
     }
-    finally { setExporting(null); setExportProgress(0) }
+    finally { setExporting(null) }
   }
 
   function regenerate() {
@@ -720,7 +720,7 @@ export default function Studio() {
 
             {/* Close button — only active when done or error */}
             <button
-              onClick={() => { setExportModalOpen(false); setExportError(null) }}
+              onClick={() => { setExportModalOpen(false); setExportError(null); setExportProgress(0); setExportStatus("") }}
               disabled={!!exporting}
               style={{
                 marginTop: 4,
