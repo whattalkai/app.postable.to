@@ -1,11 +1,21 @@
 "use client"
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 
 const PASS = process.env.NEXT_PUBLIC_STUDIO_PASS ?? "studio2024"
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0A0A0A" }} />
+    }>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const authError = searchParams.get("error") === "auth"
