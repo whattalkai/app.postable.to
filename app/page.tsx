@@ -516,7 +516,7 @@ export default function Studio() {
     setExporting("png")
     setExportModalOpen(true)
     setExportError(null)
-    setExportStatus("Rendering design…")
+    setExportStatus("Hazırlanıyor…")
     try {
       const html = await getActiveHtml()
       const res = await fetch("/api/export", {
@@ -525,7 +525,7 @@ export default function Studio() {
         body: JSON.stringify({ html, mode: "png" }),
       })
       if (!res.ok) throw new Error(await res.text())
-      setExportStatus("Preparing download…")
+      setExportStatus("İndirme hazırlanıyor…")
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -535,7 +535,7 @@ export default function Studio() {
       a.click()
       document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(url), 1000)
-      setExportStatus("PNG saved!")
+      setExportStatus("PNG kaydedildi!")
     } catch (e) {
       console.error("PNG export:", e)
       setExportError(e instanceof Error ? e.message : String(e))
@@ -549,7 +549,7 @@ export default function Studio() {
     setExportModalOpen(true)
     setExportError(null)
     setExportProgress(10)
-    setExportStatus("Rendering frames on server…")
+    setExportStatus("Hazırlanıyor…")
     try {
       const html = await getActiveHtml()
       const res = await fetch("/api/export", {
@@ -561,7 +561,7 @@ export default function Studio() {
       const { frames, fps: serverFps } = await res.json() as { frames: string[], fps: number }
 
       setExportProgress(50)
-      setExportStatus("Encoding H.264…")
+      setExportStatus("Video kodlanıyor…")
 
       // Encode frames to true H.264 MP4 using Web Codecs API + mp4-muxer
       const { Muxer, ArrayBufferTarget } = await import("mp4-muxer")
@@ -609,7 +609,7 @@ export default function Studio() {
 
       await encoder.flush()
       if (encodeError) throw encodeError
-      setExportStatus("Finalizing MP4…")
+      setExportStatus("Tamamlanıyor…")
       setExportProgress(97)
       muxer.finalize()
 
@@ -624,7 +624,7 @@ export default function Studio() {
       document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(url), 2000)
       setExportProgress(100)
-      setExportStatus("MP4 saved!")
+      setExportStatus("MP4 kaydedildi!")
     } catch (e) {
       console.error("MP4 export:", e)
       setExportError(e instanceof Error ? e.message : String(e))
@@ -685,12 +685,12 @@ export default function Studio() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polygon points="23 7 16 12 23 17 23 7" fill="#e5e5e5"/><rect x="1" y="5" width="15" height="14" rx="2" stroke="#e5e5e5" strokeWidth="2" fill="none"/></svg>
               )}
               <span style={{ color: "#e5e5e5", fontSize: 14, fontWeight: 600 }}>
-                {exporting === "png" || exportStatus === "PNG saved!" ? "Exporting PNG" : "Exporting MP4"}
+                {exporting === "png" || exportStatus === "PNG kaydedildi!" ? "PNG Aktarılıyor" : "MP4 Aktarılıyor"}
               </span>
             </div>
 
             {/* Progress bar (MP4 only) */}
-            {(exporting === "mp4" || exportStatus === "MP4 saved!") && !exportError && (
+            {(exporting === "mp4" || exportStatus === "MP4 kaydedildi!") && !exportError && (
               <div style={{ background: "#222", borderRadius: 6, height: 6, overflow: "hidden" }}>
                 <div style={{
                   height: "100%",
@@ -706,7 +706,7 @@ export default function Studio() {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {exportError ? (
                 <span style={{ color: "#f87171", fontSize: 12 }}>⚠ {exportError}</span>
-              ) : exportStatus.includes("saved!") ? (
+              ) : exportStatus.includes("kaydedildi!") ? (
                 <span style={{ color: "#3ecf8e", fontSize: 13, fontWeight: 500 }}>✓ {exportStatus}</span>
               ) : (
                 <>
@@ -732,7 +732,7 @@ export default function Studio() {
                 cursor: exporting ? "not-allowed" : "pointer",
               }}
             >
-              {exporting ? "Please wait…" : "Close"}
+              {exporting ? "Lütfen bekleyin…" : "Kapat"}
             </button>
           </div>
         </div>
