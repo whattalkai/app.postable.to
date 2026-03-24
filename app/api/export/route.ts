@@ -91,22 +91,24 @@ export async function POST(req: Request) {
       })
     }
 
-    // MP4 mode — capture frames at regular intervals
+    // MP4 mode — seek each animation to the exact frame timestamp.
+    // Real-time playback with setTimeout is unreliable in headless Chrome
+    // (background throttling causes all animations to appear finished by
+    // the time we start capturing). Seeking directly via currentTime is
+    // frame-accurate and much faster (no waiting between frames).
     if (mode === "frames") {
       const frameCount = Math.floor((duration / 1000) * fps)
       const frameInterval = 1000 / fps
       const frames: string[] = []
 
       for (let i = 0; i < frameCount; i++) {
-        // First frame is captured while animations are paused at t=0
-        // (elements at opacity:0 due to fill-mode:both → blank frame).
-        // After capturing frame 0, unpause so content animates in.
-        if (i === 1) {
-          await page.evaluate(() => {
-            document.getAnimations().forEach(anim => anim.play())
+        const currentTimeMs = i * frameInterval
+
+        await page.evaluate((t) => {
+          document.getAnimations().forEach(anim => {
+            anim.currentTime = t
           })
-        }
-        if (i > 1) await new Promise(r => setTimeout(r, frameInterval))
+        }, currentTimeMs)
 
         const screenshot = await page.screenshot({
           type: "jpeg",
