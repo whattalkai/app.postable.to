@@ -4,8 +4,8 @@ import chromium from "@sparticuz/chromium-min"
 const CHROMIUM_BINARY_URL =
   "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar"
 
-// Increase timeout for long-running export
-export const maxDuration = 60
+// Increase timeout for long-running export (Vercel Pro: up to 300s)
+export const maxDuration = 300
 
 const EXTRA_ARGS = [
   "--disable-web-security",

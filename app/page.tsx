@@ -557,7 +557,7 @@ export default function Studio() {
       const res = await fetch("/api/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html, mode: "frames", duration: 6000, fps: 5 }),
+        body: JSON.stringify({ html, mode: "frames", duration: 6000, fps: 3 }),
       })
       if (!res.ok) throw new Error(await res.text())
       const { frames, fps: serverFps } = await res.json() as { frames: string[], fps: number }
