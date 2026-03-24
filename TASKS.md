@@ -2,13 +2,8 @@
 
 ## To Do
 
-- **#9 HTML design preview must never have scrollbars** — The design preview is a strict 9:16 aspect ratio. It should never show scrollbars or require scrolling by design. Ensure the preview container has `overflow: hidden` and all content fits within the fixed 9:16 frame without overflow.
 
-- **#10 Add play/replay button to design preview** — After the animation finishes playing, show a play button overlay on the preview so the user can restart the animation. Button should appear when animation ends and disappear when animation replays.
-
-- **#11 Tasarımlar sidebar: selected item moves to top on prompt** — When a design is selected from the sidebar and the user sends a prompt, that item should automatically move to the first position in the list (similar to how conversations work in Claude Code — most recently active goes to top).
-
-- **#12 Copy Studio AI chat dialogue to Brand AI chat dialogue** — Replicate the exact AI chat dialogue we built on the Studio page to the Brand page's AI chat dialogue. Same UI, same functionality, same components — adapted for the Brand context.
+- **#13 Set up Google Login for the project** — Add Google OAuth authentication so users can sign in with their Google account. Set up the auth provider, login/logout flow, session management, and protect relevant pages behind authentication.
 
 <!-- Add new tasks here -->
 
@@ -21,6 +16,10 @@
 
 ## In Review
 
+- **#9 HTML design preview must never have scrollbars** — Added `scrolling="no"` and `overflow: hidden` to the iframe, plus `borderRadius: 4` on the wrapper. Preview container fully clips content to 9:16 frame.
+- **#10 Add play/replay button to design preview** — Detects when iframe CSS animations finish via `getAnimations()` + `Promise.all(finished)`. Shows a translucent play button overlay. Click reloads the iframe to replay animations.
+- **#11 Tasarımlar sidebar: selected item moves to top on prompt** — In `sendMessage()`, active design is moved to index 0 of the designs array before generating/editing. Like Claude Code's conversation ordering.
+- **#12 Copy Studio AI chat dialogue to Brand AI chat dialogue** — Replaced Brand page chat with exact Studio chat UI: ChatGPT-style pill input bar, voice input button (VoiceInputButton), typing indicator (bouncing dots), message bubbles with `word-break` and line-break rendering. Files: `app/page.tsx`, `app/brand/page.tsx`.
 
 <!-- Tasks confirmed working, waiting for Cemre's approval -->
 

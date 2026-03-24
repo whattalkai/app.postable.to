@@ -214,6 +214,7 @@ export default function Studio() {
   const [attachedImages, setAttachedImages] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [animationDone, setAnimationDone] = useState(false)
 
   // Panel visibility
   const [showList, setShowList] = useState(true)
@@ -308,6 +309,43 @@ export default function Studio() {
   }, [scaleIframe, showList, showChat, showCaption])
 
   useEffect(() => { setTimeout(scaleIframe, 250) }, [showList, showChat, showCaption, scaleIframe])
+
+  // Detect when iframe animations finish → show replay button
+  useEffect(() => {
+    const fr = iframeRef.current
+    if (!fr || !active || (!active.html && !active.src)) return
+    setAnimationDone(false)
+    const onLoad = () => {
+      try {
+        const doc = fr.contentDocument
+        if (!doc) return
+        const anims = doc.getAnimations()
+        if (anims.length === 0) { setAnimationDone(true); return }
+        Promise.all(anims.map(a => a.finished)).then(() => setAnimationDone(true)).catch(() => {})
+      } catch {}
+    }
+    fr.addEventListener("load", onLoad)
+    // Also check if already loaded
+    if (fr.contentDocument?.readyState === "complete") onLoad()
+    return () => fr.removeEventListener("load", onLoad)
+  }, [active?.id, active?.html, active?.src])
+
+  function replayAnimation() {
+    const fr = iframeRef.current
+    if (!fr) return
+    setAnimationDone(false)
+    if (active?.src) {
+      // For src-based iframes, reload by re-setting src
+      const src = fr.src
+      fr.src = ""
+      setTimeout(() => { fr.src = src }, 50)
+    } else if (active?.html) {
+      // For srcDoc-based iframes, re-set the srcDoc
+      const doc = fr.srcdoc
+      fr.srcdoc = ""
+      setTimeout(() => { fr.srcdoc = doc }, 50)
+    }
+  }
 
   function persist(list: Design[]) {
     setDesigns(list)
@@ -443,6 +481,14 @@ export default function Studio() {
     addUserMsg(designId, text, images)
     setInput("")
     setAttachedImages([])
+
+    // Move the active design to the top of the list (most recently active first)
+    const idx = designs.findIndex(d => d.id === designId)
+    if (idx > 0) {
+      const reordered = [designs[idx], ...designs.slice(0, idx), ...designs.slice(idx + 1)]
+      persist(reordered)
+    }
+
     const lower = text.toLowerCase()
 
     // If the active design is empty (new slot) → always generate
@@ -981,13 +1027,41 @@ export default function Studio() {
               <p style={{ fontSize: 12, color: "#3d3d3d" }}>Sol panelden konu gir veya mevcut tasarımı seç</p>
             </div>
           ) : (
-            <div ref={wrapRef} style={{ height: "100%", aspectRatio: "9/16", position: "relative", overflow: "hidden", flexShrink: 0 }}>
+            <div ref={wrapRef} style={{ height: "100%", aspectRatio: "9/16", position: "relative", overflow: "hidden", flexShrink: 0, borderRadius: 4 }}>
               <iframe
                 ref={iframeRef}
                 {...(active.src ? { src: active.src } : { srcDoc: active.html, sandbox: "allow-scripts allow-same-origin" })}
                 onLoad={scaleIframe}
-                style={{ position: "absolute", top: 0, left: 0, width: 1080, height: 1920, border: "none", transformOrigin: "top left", pointerEvents: "none", display: "block" }}
+                scrolling="no"
+                style={{ position: "absolute", top: 0, left: 0, width: 1080, height: 1920, border: "none", transformOrigin: "top left", pointerEvents: "none", display: "block", overflow: "hidden" }}
               />
+              {/* Replay button overlay */}
+              {animationDone && !loading && (
+                <button
+                  onClick={replayAnimation}
+                  style={{
+                    position: "absolute", inset: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "rgba(0,0,0,0.35)", border: "none", cursor: "pointer",
+                    transition: "background 0.2s",
+                    zIndex: 10,
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.5)" }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.35)" }}
+                >
+                  <div style={{
+                    width: 56, height: 56, borderRadius: "50%",
+                    background: "rgba(255,255,255,0.15)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(255,255,255,0.25)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <polygon points="8,5 20,12 8,19" fill="#fff" />
+                    </svg>
+                  </div>
+                </button>
+              )}
             </div>
           )}
           {loading && (

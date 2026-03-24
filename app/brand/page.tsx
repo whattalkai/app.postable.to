@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { getSession, clearSession } from "@/lib/session"
+import { VoiceInputButton } from "@/components/VoiceInputButton"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Color = { name: string; hex: string; usage: string }
@@ -68,6 +69,7 @@ export default function BrandPage() {
   const [showChat, setShowChat] = useState(true)
 
   const [activeSection, setActiveSection] = useState("logo")
+  const [voiceError, setVoiceError] = useState<string | null>(null)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -87,6 +89,12 @@ export default function BrandPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [msgs])
+
+  // Auto-resize textarea when input changes (e.g. from voice transcription)
+  useEffect(() => {
+    const el = inputRef.current
+    if (el) { el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 200) + "px" }
+  }, [input])
 
   function persistBrand(data: BrandData) {
     setBrand(data)
@@ -278,35 +286,75 @@ export default function BrandPage() {
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px 12px 6px", display: "flex", flexDirection: "column", gap: 10, scrollBehavior: "smooth" }}>
+          <div style={{ flex: 1, overflowY: "auto" as const, overflowX: "hidden" as const, padding: "12px 12px 6px", display: "flex", flexDirection: "column", gap: 10, scrollBehavior: "smooth" }}>
             {msgs.map((m, i) => (
               <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3, maxWidth: "90%", alignSelf: m.role === "user" ? "flex-end" : "flex-start", alignItems: m.role === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{ padding: "8px 11px", borderRadius: 11, fontSize: 12, lineHeight: 1.55, background: m.role === "user" ? "#fff" : "#1c1c1c", color: m.role === "user" ? "#0c0c0c" : "#e6e6e6", borderBottomLeftRadius: m.role === "ai" ? 3 : 11, borderBottomRightRadius: m.role === "user" ? 3 : 11, whiteSpace: "pre-wrap" }}>
-                  {m.text || (streaming && i === msgs.length - 1 ? <span style={{ opacity: 0.4 }}>●●●</span> : "")}
+                <div style={{ padding: "8px 11px", borderRadius: 11, fontSize: 12, lineHeight: 1.55, background: m.role === "user" ? "#fff" : "#1c1c1c", color: m.role === "user" ? "#0c0c0c" : "#e6e6e6", borderBottomLeftRadius: m.role === "ai" ? 3 : 11, borderBottomRightRadius: m.role === "user" ? 3 : 11, wordBreak: "break-word" as const, overflowWrap: "break-word" as const }}>
+                  {m.text ? m.text.split("\n").map((l, j) => <span key={j}>{l}<br/></span>) : (streaming && i === msgs.length - 1 ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      {[0, 0.2, 0.4].map((d, k) => (
+                        <div key={k} style={{ width: 4, height: 4, borderRadius: "50%", background: "#6b6b6b", animation: `bounce 1.2s ${d}s infinite` }}/>
+                      ))}
+                    </div>
+                  ) : "")}
                 </div>
                 <div style={{ fontSize: 9.5, color: "#3d3d3d", padding: "0 2px" }}>{m.time}</div>
               </div>
             ))}
+            {streaming && msgs.length > 0 && msgs[msgs.length - 1].text && (
+              <div style={{ alignSelf: "flex-start" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 12px", background: "#1c1c1c", borderRadius: 11, borderBottomLeftRadius: 3 }}>
+                  {[0, 0.2, 0.4].map((d, i) => (
+                    <div key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: "#6b6b6b", animation: `bounce 1.2s ${d}s infinite` }}/>
+                  ))}
+                </div>
+              </div>
+            )}
             <div ref={chatEndRef}/>
           </div>
 
-          <div style={{ padding: "10px 12px 12px", borderTop: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 7, background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "7px 7px 7px 12px" }}>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 80) + "px" }}
-                onKeyDown={handleKey}
-                placeholder="Markanız hakkında bir şey söyleyin…"
-                rows={1}
-                disabled={streaming}
-                style={{ flex: 1, fontFamily: "inherit", fontSize: 12, color: "#e6e6e6", background: "transparent", border: "none", outline: "none", resize: "none", minHeight: 30, maxHeight: 80, lineHeight: 1.5, padding: 0 }}
-              />
-              <button onClick={sendMessage} disabled={streaming || !input.trim()} style={{ width: 30, height: 30, borderRadius: 7, background: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: streaming || !input.trim() ? 0.5 : 1 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="#0c0c0c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22l-4-9-9-4 20-7z" stroke="#0c0c0c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
+          <div style={{ padding: "8px 10px 10px", flexShrink: 0 }}>
+            {/* Voice error toast */}
+            {voiceError && (
+              <div style={{ marginBottom: 6, padding: "6px 10px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 20, fontSize: 11, color: "#f87171", display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ flex: 1 }}>{voiceError}</span>
+                <button onClick={() => setVoiceError(null)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>
+              </div>
+            )}
+            {/* ChatGPT-style pill input bar */}
+            <div style={{ display: "flex", flexDirection: "column", background: "#2f2f2f", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: "0", overflow: "hidden" }}>
+              {/* Textarea row */}
+              <div style={{ padding: "12px 14px 0 14px" }}>
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px" }}
+                  onKeyDown={handleKey}
+                  placeholder="Markanız hakkında bir şey söyleyin…"
+                  rows={1}
+                  disabled={streaming}
+                  style={{ width: "100%", fontFamily: "inherit", fontSize: 15, color: "#ececec", background: "transparent", border: "none", outline: "none", resize: "none", minHeight: 24, maxHeight: 200, lineHeight: 1.6, padding: 0 }}
+                />
+              </div>
+              {/* Bottom action row: mic & send on right */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "4px 8px 8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <VoiceInputButton
+                    onTranscript={(text) => setInput(prev => prev ? prev + " " + text : text)}
+                    disabled={streaming}
+                    onError={setVoiceError}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={streaming || !input.trim()}
+                    title="Gönder"
+                    style={{ width: 32, height: 32, borderRadius: "50%", background: (streaming || !input.trim()) ? "#676767" : "#fff", border: "none", cursor: (streaming || !input.trim()) ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke={(streaming || !input.trim()) ? "#929292" : "#0c0c0c"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: 9.5, color: "#3d3d3d", textAlign: "center", marginTop: 7 }}>Enter gönderin · Shift+Enter satır atlayın</div>
           </div>
         </div>
 
@@ -467,9 +515,10 @@ export default function BrandPage() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
-        textarea::placeholder { color: #3d3d3d; }
+        textarea::placeholder { color: #8e8e8e; }
         input::placeholder { color: #3d3d3d; }
         select option { background: #1a1a1a; }
+        @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
       `}</style>
     </div>
   )
