@@ -57,16 +57,22 @@ export async function POST(req: Request) {
     )
 
     // Reset all animations to frame 0 — networkidle0 can take time during
-    // which CSS animations have already progressed
+    // which CSS animations have already progressed.
+    // Use pause + currentTime=0 instead of cancel+play so that
+    // animation-fill-mode:both keeps elements at their "from" state
+    // (e.g. opacity:0 for fadeUp) rather than showing base styles.
     await page.evaluate(() => {
       document.getAnimations().forEach(anim => {
-        anim.cancel()
-        anim.play()
+        anim.currentTime = 0
+        anim.pause()
       })
     })
 
     if (mode === "png") {
-      // Wait for animations to finish (designs animate over ~3-4 seconds)
+      // Unpause and wait for animations to finish (designs animate over ~3-4 seconds)
+      await page.evaluate(() => {
+        document.getAnimations().forEach(anim => anim.play())
+      })
       await new Promise(r => setTimeout(r, 4000))
 
       const screenshot = await page.screenshot({
@@ -92,8 +98,15 @@ export async function POST(req: Request) {
       const frames: string[] = []
 
       for (let i = 0; i < frameCount; i++) {
-        // First frame immediately, rest after interval
-        if (i > 0) await new Promise(r => setTimeout(r, frameInterval))
+        // First frame is captured while animations are paused at t=0
+        // (elements at opacity:0 due to fill-mode:both → blank frame).
+        // After capturing frame 0, unpause so content animates in.
+        if (i === 1) {
+          await page.evaluate(() => {
+            document.getAnimations().forEach(anim => anim.play())
+          })
+        }
+        if (i > 1) await new Promise(r => setTimeout(r, frameInterval))
 
         const screenshot = await page.screenshot({
           type: "jpeg",
