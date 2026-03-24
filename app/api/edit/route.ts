@@ -6,6 +6,12 @@ const EDITOR_PROMPT = `Sen WhatTalk.ai için bir kreatif tasarımcısın.
 Sana mevcut bir HTML tasarımı ve kullanıcının düzenleme isteği verilecek.
 Tasarımı isteğe göre düzenle ve sonucu JSON formatında döndür.
 
+KRİTİK KURAL — TASARIMI ASLA SİLME:
+- Mevcut HTML'in TAMAMINI döndürmelisin — sadece istenen kısmı değiştir
+- Eğer bir elementi kaldırman isteniyorsa, sadece o elementi sil, geri kalan HER ŞEYİ aynen bırak
+- HTML çıktın, orijinal HTML ile aynı genel uzunlukta olmalı (sadece istenen değişiklik kadar fark)
+- Boş veya eksik HTML döndürme — bu tasarımı siler ve geri alınamaz
+
 ZORUNLU KURALLAR:
 - Orijinal tasarımın genel yapısını, stilini, boyutlarını ve animasyonlarını koru
 - SADECE istenen değişikliği yap — gereksiz hiçbir şeyi değiştirme
@@ -69,7 +75,7 @@ export async function POST(req: Request) {
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 8192,
+      max_tokens: 16384,
       system: EDITOR_PROMPT + brandContext,
       messages: [{ role: "user", content: buildContent(images, editText) }]
     })
@@ -98,6 +104,25 @@ export async function POST(req: Request) {
       // Fallback: AI returned raw HTML (old format)
       html = raw
       message = ""
+    }
+
+    // ── SAFEGUARD: never return broken/empty/truncated HTML ──
+    const hasDoctype = html.toLowerCase().includes("<!doctype") || html.toLowerCase().includes("<html")
+    const hasBody = html.toLowerCase().includes("<body")
+    const tooShort = html.length < existingHtml.length * 0.3 // less than 30% of original = suspicious
+
+    if (!html || !hasDoctype || !hasBody || tooShort) {
+      console.error("Edit safeguard triggered:", {
+        htmlLength: html.length,
+        originalLength: existingHtml.length,
+        hasDoctype,
+        hasBody,
+        tooShort,
+      })
+      return Response.json({
+        html: existingHtml,
+        message: "⚠️ Düzenleme güvenli görünmüyordu, tasarımını korumak için değişikliği uygulamadım. Lütfen tekrar dene veya farklı bir şekilde iste.",
+      })
     }
 
     return Response.json({ html, message })

@@ -3,7 +3,6 @@
 ## To Do
 
 
-- **#14 CRITICAL BUG: AI edit wiped out the entire design** — Animation Test — Referans was an existing static design with real content. User asked for a minor change ("yukarıdaki mor butonu kaldır") but the AI returned empty/broken HTML that wiped the design completely. Investigate the `/api/edit` endpoint and the edit agent prompt — find the root cause and add safeguards so this can never happen again. The AI must preserve the full design and only change what was requested.
 
 
 - **#13 Set up Google Login for the project** — Add Google OAuth authentication so users can sign in with their Google account. Set up the auth provider, login/logout flow, session management, and protect relevant pages behind authentication.
@@ -22,6 +21,7 @@
 - **#9 HTML design preview must never have scrollbars** — Added `scrolling="no"` and `overflow: hidden` to the iframe, plus `borderRadius: 4` on the wrapper. Preview container fully clips content to 9:16 frame.
 - **#10 Add play/replay button to design preview** — Detects when iframe CSS animations finish via `getAnimations()` + `Promise.all(finished)`. Shows a translucent play button overlay. Click reloads the iframe to replay animations.
 - **#15 Chat AI responds conversationally** — Edit API now returns JSON with `html` + `message` fields. AI writes a natural, context-aware Turkish response explaining what it changed (e.g. "Mor butonu kaldırdım, geri kalanı aynen duruyor"). Generate success message also improved with edit suggestions. Falls back to old message if AI returns raw HTML. Files: `app/api/edit/route.ts`, `app/page.tsx`.
+- **#14 CRITICAL BUG FIX: AI edit can no longer wipe designs** — Root cause: no validation on AI-returned HTML — empty/broken/truncated results were blindly saved, destroying the design. Fix: (1) Server-side safeguard rejects HTML that's missing doctype/body or is <30% of original length, returns original HTML instead. (2) Client-side safeguard also checks length ratio before saving. (3) Prompt now has explicit "NEVER delete the design" instructions. (4) max_tokens increased 8192→16384 to prevent truncation. Files: `app/api/edit/route.ts`, `app/page.tsx`.
 
 <!-- Tasks confirmed working, waiting for Cemre's approval -->
 

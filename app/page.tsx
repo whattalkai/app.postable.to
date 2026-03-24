@@ -456,6 +456,12 @@ export default function Studio() {
       setTyping(false)
       if (!res.ok || !data.html) { addAiMsg(designId, `❌ Hata: ${data.error || "Bilinmeyen hata"}`); return }
 
+      // Client-side safeguard: reject suspiciously small results
+      if (currentHtml && data.html.length < currentHtml.length * 0.3) {
+        addAiMsg(designId, "⚠️ Yapay zeka beklenenden çok farklı bir sonuç döndürdü. Tasarımın korundu — lütfen tekrar dene.")
+        return
+      }
+
       // Update the design in-place (clear src, set html)
       const updated = designs.map(d =>
         d.id === active.id ? { ...d, html: data.html, src: undefined } : d
