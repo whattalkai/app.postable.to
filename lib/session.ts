@@ -20,10 +20,15 @@ export async function getSession() {
 }
 
 export async function signOut() {
-  const supabase = createClient()
-  await supabase.auth.signOut()
-  // Also clear the password cookie
+  // Clear the password cookie first (always works)
   if (typeof document !== "undefined") {
     document.cookie = "wt_pass_auth=; path=/; max-age=0"
+  }
+  // Then try Supabase signOut (may fail if no session exists)
+  try {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+  } catch {
+    // Ignore — no Supabase session to clear
   }
 }
