@@ -17,7 +17,6 @@
 <!-- Add new tasks here -->
 
 ## In Progress
-- **#24 Fix: Task sayfasında "Mark as Done" butonu gecikmeli taşıyor** — Interview sırasında fark edildi. Task sayfasında bir göreve "Mark as Done" butonuna basıldığında, görev hemen Done sütununa taşınmıyor — belirli bir gecikme sonra taşınıyor. Kullanıcı deneyimi açısından aksiyon anında yansımalı. Optimistic UI update eklenmeli: butona basıldığı anda görev arayüzde Done'a taşınmalı, API isteği arka planda tamamlanmalı.
 
 
 ## Self Review
@@ -25,6 +24,8 @@
 <!-- Tasks being self-reviewed -->
 
 ## In Review
+
+- **#24 Fix: Task sayfasında "Mark as Done" butonu gecikmeli taşıyor** — Optimistic UI eklendi. Butona basıldığı anda görev arayüzde Done kolonuna taşınıyor; GitHub API isteği arka planda tamamlanıyor. `TasksBoard` optimisticallyDone state tutuyor, `displayColumns` bu state'e göre türetiliyor. `DoneButton` onOptimisticDone callback'ini anında tetikliyor, `router.refresh()` sunucu verisiyle senkronize ediyor.
 
 - **#22 Consider moving Task Agent AI chat to a cheaper LLM model** — Switched model from `claude-sonnet-4-6` to `claude-haiku-4-5-20251001` in `app/api/tasks-chat/route.ts`. Both call sites updated (initial call + tool-use loop continuation). Haiku handles simple CRUD operations on TASKS.md at a fraction of Sonnet cost with no quality loss for this use case.
 
