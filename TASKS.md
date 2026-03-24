@@ -10,7 +10,6 @@
 
 - **#13 Set up Google Login for the project** — Add Google OAuth authentication so users can sign in with their Google account. Set up the auth provider, login/logout flow, session management, and protect relevant pages behind authentication.
 
-- **#19 Test Task 🧪** — Bu bir test görevidir.
 
 <!-- Add new tasks here -->
 

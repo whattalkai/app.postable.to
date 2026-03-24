@@ -15,8 +15,6 @@
 ## Task Management
 - Pick tasks from **To Do**, move to **In Progress** while working
 - Never skip a stage — always move through stages in strict order
-- If a task is in **Needs Iteration**, read the feedback carefully, redo the work, then move back through **Self Review** before **In Review**
-
 ## Task Stages — Strict Order
 1. **To Do** — waiting to be picked up
 2. **In Progress** — actively working on it
