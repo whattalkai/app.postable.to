@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DoneButton } from "./DoneButton"
 
 type Task = {
@@ -20,6 +20,24 @@ export function TaskCard({
   dotColor: string
 }) {
   const [open, setOpen] = useState(false)
+  const [summary, setSummary] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!open || summary !== null) return
+    setLoading(true)
+    fetch("/api/tasks-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `${task.id} numaralı görevi bana kısaca özetle. Teknik detayları basit ve anlaşılır şekilde açıkla. Ne yapıldı, neden yapıldı, sonuç ne oldu — 3-5 cümle ile. Emoji kullan.`,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => setSummary(data.reply || null))
+      .catch(() => setSummary(null))
+      .finally(() => setLoading(false))
+  }, [open, summary, task.id])
 
   return (
     <>
@@ -208,7 +226,27 @@ export function TaskCard({
               overflowY: "auto",
               flex: 1,
             }}>
-              {task.body ? (
+              {loading ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#666", fontSize: 13 }}>
+                  <span style={{
+                    width: 14, height: 14, borderRadius: "50%",
+                    border: "2px solid #333", borderTopColor: dotColor,
+                    animation: "spin 0.8s linear infinite",
+                  }} />
+                  Özet hazırlanıyor...
+                  <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+                </div>
+              ) : summary ? (
+                <div style={{
+                  color: "#ccc",
+                  fontSize: 13,
+                  lineHeight: 1.75,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}>
+                  {formatBody(summary)}
+                </div>
+              ) : task.body ? (
                 <div style={{
                   color: "#ccc",
                   fontSize: 13,
