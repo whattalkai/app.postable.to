@@ -14,11 +14,11 @@
 
 <!-- #23 moved to In Progress -->
 
-- **#24 Fix: Task sayfasında "Mark as Done" butonu gecikmeli taşıyor** — Interview sırasında fark edildi. Task sayfasında bir göreve "Mark as Done" butonuna basıldığında, görev hemen Done sütununa taşınmıyor — belirli bir gecikme sonra taşınıyor. Kullanıcı deneyimi açısından aksiyon anında yansımalı. Optimistic UI update eklenmeli: butona basıldığı anda görev arayüzde Done'a taşınmalı, API isteği arka planda tamamlanmalı.
 
 <!-- Add new tasks here -->
 
 ## In Progress
+- **#24 Fix: Task sayfasında "Mark as Done" butonu gecikmeli taşıyor** — Interview sırasında fark edildi. Task sayfasında bir göreve "Mark as Done" butonuna basıldığında, görev hemen Done sütununa taşınmıyor — belirli bir gecikme sonra taşınıyor. Kullanıcı deneyimi açısından aksiyon anında yansımalı. Optimistic UI update eklenmeli: butona basıldığı anda görev arayüzde Done'a taşınmalı, API isteği arka planda tamamlanmalı.
 - **#13 Set up Google Login for the project** — Added Supabase Auth with Google OAuth. "Google ile Giriş Yap" button on login page, OAuth callback at `/auth/callback`, Supabase client helpers in `lib/supabase/`. Password login kept as fallback. Session management updated to check Supabase session first, then password cookie. **Requires:** Enable Google provider in Supabase dashboard (Authentication → Providers → Google) with Google Client ID/Secret, and add `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` to Vercel env vars. | 💬 Cemre: Supabase Google Login eklendi, credentials da girildi. Sonraki adım ne?
 
 
