@@ -7,18 +7,22 @@
 
 
 
-- **#13 Set up Google Login for the project** — Add Google OAuth authentication so users can sign in with their Google account. Set up the auth provider, login/logout flow, session management, and protect relevant pages behind authentication.
 
+
+
+- **#22 Consider moving Task Agent AI chat to a cheaper LLM model** — Sonnet is overkill for the simple operations handled by the Task Agent AI chat. Evaluate and consider switching to a cheaper/lighter LLM model (e.g. Claude Haiku or similar) to reduce costs without sacrificing quality.
 
 <!-- Add new tasks here -->
 
 ## In Progress
+
 
 ## Self Review
 
 <!-- Tasks being self-reviewed -->
 
 ## In Review
+- **#13 Set up Google Login for the project** — Added Supabase Auth with Google OAuth. "Google ile Giriş Yap" button on login page, OAuth callback at `/auth/callback`, Supabase client helpers in `lib/supabase/`. Password login kept as fallback. Session management updated to check Supabase session first, then password cookie. **Requires:** Enable Google provider in Supabase dashboard (Authentication → Providers → Google) with Google Client ID/Secret, and add `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` to Vercel env vars.
 
 - **#20 Video duration & speed control** — Added `− N sn +` stepper control between PNG and MP4 buttons in the toolbar. Users can set video duration from 1–30 seconds. Default is 6s. Value is sent to the export API as `duration: videoDuration * 1000`. MP4 button tooltip dynamically shows chosen duration. File: `app/page.tsx`.
 
@@ -31,6 +35,8 @@
 - **#18 Task detail dialogue with dev explanation + iteration tracking** — Created `TaskCard` client component. Clicking any task card opens a detail modal showing: full task ID badge (color-matched to column), status badge, title, and the complete dev explanation without truncation. Backtick-wrapped code rendered as styled `<code>` elements. Iteration count parsed from `[iterations: N]` tag in TASKS.md — displayed as a colored badge (gray ×1, yellow ×2, red ×3+) on both the card and modal header. Modal has close button and Mark as Done for In Review tasks. Files: `app/tasks/TaskCard.tsx` (new), `app/tasks/page.tsx`.
 
 - **#17 Tasks page chat UI** — Added Studio-style chat panel to the left side of the tasks page. Same pill input bar, voice input (VoiceInputButton), typing indicator (bouncing dots), message bubbles. Connected to `/api/tasks-chat` endpoint. Board auto-refreshes via `router.refresh()` when the agent modifies TASKS.md. Chat history persisted in localStorage (`wt_tasks_chat_v1`). Chat panel toggleable via button. Files: `app/tasks/TasksBoard.tsx` (new), `app/tasks/page.tsx` (simplified to Server Component wrapper).
+
+- **#21 Add image button to AI chat dialogues for Brand and Tasks** — Replicated Studio's full image upload UI to both Brand and Tasks chat panels. Added: `+` button (bottom-left of input pill) to attach images, image preview thumbnails (54×54) inside the pill with remove (×) buttons, drag & drop with visual highlight feedback, paste image support (Ctrl+V), image display in chat bubbles (68×68 thumbnails), hidden file input with `image/*` and multi-select. Images are resized to max 1200px and compressed to JPEG 0.85 quality. Each page uses its own accent color for drag highlight (purple for Brand, green for Tasks, teal for Studio). Files: `app/brand/page.tsx`, `app/tasks/TasksBoard.tsx`. [iterations: 1]
 
 <!-- Tasks confirmed working, waiting for Cemre's approval -->
 
