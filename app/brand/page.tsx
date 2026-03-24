@@ -13,7 +13,7 @@ type BrandData = {
   colors: Color[]; assistants: Assistant[]
   doList: string[]; dontList: string[]; keyMessages: string[]; hashtags: string[]
 }
-type Msg = { role: "ai" | "user"; text: string; time: string }
+type Msg = { role: "ai" | "user"; text: string; time: string; images?: string[] }
 
 // ── Defaults ───────────────────────────────────────────────────────────────────
 const DEFAULT_BRAND: BrandData = {
@@ -70,10 +70,13 @@ export default function BrandPage() {
 
   const [activeSection, setActiveSection] = useState("logo")
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [attachedImages, setAttachedImages] = useState<string[]>([])
+  const [isDragging, setIsDragging] = useState(false)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const chatFileInputRef = useRef<HTMLInputElement>(null)
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   useEffect(() => {
@@ -128,13 +131,52 @@ export default function BrandPage() {
     return { clean, updated }
   }
 
+  function processImageFile(file: File) {
+    if (!file.type.startsWith("image/")) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const original = e.target?.result as string
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 1200
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+          else { width = Math.round(width * MAX / height); height = MAX }
+        }
+        const canvas = document.createElement("canvas")
+        canvas.width = width; canvas.height = height
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height)
+        setAttachedImages(prev => [...prev, canvas.toDataURL("image/jpeg", 0.85)])
+      }
+      img.src = original
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = Array.from(e.clipboardData.items)
+    items.filter(i => i.type.startsWith("image/")).forEach(i => {
+      const f = i.getAsFile()
+      if (f) processImageFile(f)
+    })
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragging(false)
+    Array.from(e.dataTransfer.files).forEach(processImageFile)
+  }
+
   async function sendMessage() {
     const text = input.trim()
-    if (!text || streaming) return
-    const userMsg: Msg = { role: "user", text, time: getTime() }
+    if (!text && attachedImages.length === 0) return
+    if (streaming) return
+    const userMsg: Msg = { role: "user", text, time: getTime(), images: attachedImages.length > 0 ? [...attachedImages] : undefined }
     const history = [...msgs, userMsg]
     setMsgs(history)
     setInput("")
+    setAttachedImages([])
     setStreaming(true)
     const aiPlaceholder: Msg = { role: "ai", text: "", time: getTime() }
     setMsgs([...history, aiPlaceholder])
@@ -290,6 +332,13 @@ export default function BrandPage() {
             {msgs.map((m, i) => (
               <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3, maxWidth: "90%", alignSelf: m.role === "user" ? "flex-end" : "flex-start", alignItems: m.role === "user" ? "flex-end" : "flex-start" }}>
                 <div style={{ padding: "8px 11px", borderRadius: 11, fontSize: 12, lineHeight: 1.55, background: m.role === "user" ? "#fff" : "#1c1c1c", color: m.role === "user" ? "#0c0c0c" : "#e6e6e6", borderBottomLeftRadius: m.role === "ai" ? 3 : 11, borderBottomRightRadius: m.role === "user" ? 3 : 11, wordBreak: "break-word" as const, overflowWrap: "break-word" as const }}>
+                  {m.images && m.images.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: m.text ? 6 : 0 }}>
+                      {m.images.map((src, idx) => (
+                        <img key={idx} src={src} alt="" style={{ width: 68, height: 68, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(0,0,0,0.12)", display: "block" }} />
+                      ))}
+                    </div>
+                  )}
                   {m.text ? m.text.split("\n").map((l, j) => <span key={j}>{l}<br/></span>) : (streaming && i === msgs.length - 1 ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       {[0, 0.2, 0.4].map((d, k) => (
@@ -313,7 +362,12 @@ export default function BrandPage() {
             <div ref={chatEndRef}/>
           </div>
 
-          <div style={{ padding: "8px 10px 10px", flexShrink: 0 }}>
+          <div
+            style={{ padding: "8px 10px 10px", flexShrink: 0 }}
+            onDrop={handleDrop}
+            onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+            onDragLeave={() => setIsDragging(false)}
+          >
             {/* Voice error toast */}
             {voiceError && (
               <div style={{ marginBottom: 6, padding: "6px 10px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 20, fontSize: 11, color: "#f87171", display: "flex", alignItems: "center", gap: 6 }}>
@@ -322,7 +376,21 @@ export default function BrandPage() {
               </div>
             )}
             {/* ChatGPT-style pill input bar */}
-            <div style={{ display: "flex", flexDirection: "column", background: "#2f2f2f", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: "0", overflow: "hidden" }}>
+            <div style={{ display: "flex", flexDirection: "column", background: isDragging ? "rgba(120,85,255,0.04)" : "#2f2f2f", border: `1px solid ${isDragging ? "rgba(120,85,255,0.5)" : "rgba(255,255,255,0.08)"}`, borderRadius: 24, padding: "0", transition: "border-color 0.15s", overflow: "hidden" }}>
+              {/* Attached image previews — inside the pill */}
+              {attachedImages.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "10px 14px 0" }}>
+                  {attachedImages.map((src, idx) => (
+                    <div key={idx} style={{ position: "relative", width: 54, height: 54, flexShrink: 0 }}>
+                      <img src={src} alt="" style={{ width: 54, height: 54, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", display: "block" }} />
+                      <button
+                        onClick={() => setAttachedImages(prev => prev.filter((_, i) => i !== idx))}
+                        style={{ position: "absolute", top: -5, right: -5, width: 16, height: 16, borderRadius: "50%", background: "#333", border: "1px solid rgba(255,255,255,0.15)", color: "#ccc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, lineHeight: 1, padding: 0 }}
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
               {/* Textarea row */}
               <div style={{ padding: "12px 14px 0 14px" }}>
                 <textarea
@@ -330,14 +398,26 @@ export default function BrandPage() {
                   value={input}
                   onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px" }}
                   onKeyDown={handleKey}
-                  placeholder="Markanız hakkında bir şey söyleyin…"
+                  onPaste={handlePaste}
+                  placeholder={isDragging ? "Görseli bırak…" : "Markanız hakkında bir şey söyleyin…"}
                   rows={1}
                   disabled={streaming}
                   style={{ width: "100%", fontFamily: "inherit", fontSize: 15, color: "#ececec", background: "transparent", border: "none", outline: "none", resize: "none", minHeight: 24, maxHeight: 200, lineHeight: 1.6, padding: 0 }}
                 />
               </div>
-              {/* Bottom action row: mic & send on right */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "4px 8px 8px" }}>
+              {/* Bottom action row: + on left, mic & send on right */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px 8px" }}>
+                {/* Left: attach button */}
+                <button
+                  onClick={() => chatFileInputRef.current?.click()}
+                  title="Görsel ekle"
+                  style={{ width: 32, height: 32, borderRadius: "50%", background: "transparent", border: "none", color: isDragging ? "#7855FF" : "#b4b4b4", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0, transition: "color 0.15s, background 0.15s" }}
+                  onMouseEnter={e => { (e.target as HTMLElement).style.background = "rgba(255,255,255,0.08)" }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.background = "transparent" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </button>
+                {/* Right: mic + send */}
                 <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <VoiceInputButton
                     onTranscript={(text) => setInput(prev => prev ? prev + " " + text : text)}
@@ -346,15 +426,23 @@ export default function BrandPage() {
                   />
                   <button
                     onClick={sendMessage}
-                    disabled={streaming || !input.trim()}
+                    disabled={streaming || (!input.trim() && attachedImages.length === 0)}
                     title="Gönder"
-                    style={{ width: 32, height: 32, borderRadius: "50%", background: (streaming || !input.trim()) ? "#676767" : "#fff", border: "none", cursor: (streaming || !input.trim()) ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
+                    style={{ width: 32, height: 32, borderRadius: "50%", background: (streaming || (!input.trim() && attachedImages.length === 0)) ? "#676767" : "#fff", border: "none", cursor: (streaming || (!input.trim() && attachedImages.length === 0)) ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke={(streaming || !input.trim()) ? "#929292" : "#0c0c0c"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke={(streaming || (!input.trim() && attachedImages.length === 0)) ? "#929292" : "#0c0c0c"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
                 </div>
               </div>
             </div>
+            <input
+              ref={chatFileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={e => { Array.from(e.target.files || []).forEach(processImageFile); e.target.value = "" }}
+            />
           </div>
         </div>
 

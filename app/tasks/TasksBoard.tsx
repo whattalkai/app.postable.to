@@ -7,7 +7,7 @@ import { VoiceInputButton } from "@/components/VoiceInputButton"
 
 type Task = { id: string; title: string; body: string; iterations: number }
 type Column = { title: string; tasks: Task[]; color: string; dot: string }
-type Msg = { role: "user" | "ai"; text: string; time: string }
+type Msg = { role: "user" | "ai"; text: string; time: string; images?: string[] }
 
 const WELCOME_MSG: Msg = {
   role: "ai",
@@ -28,9 +28,12 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
   const [loading, setLoading] = useState(false)
   const [showChat, setShowChat] = useState(true)
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [attachedImages, setAttachedImages] = useState<string[]>([])
+  const [isDragging, setIsDragging] = useState(false)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load chat history from localStorage
   useEffect(() => {
@@ -54,13 +57,52 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
     try { localStorage.setItem("wt_tasks_chat_v1", JSON.stringify(messages)) } catch {}
   }
 
+  function processImageFile(file: File) {
+    if (!file.type.startsWith("image/")) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const original = e.target?.result as string
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 1200
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+          else { width = Math.round(width * MAX / height); height = MAX }
+        }
+        const canvas = document.createElement("canvas")
+        canvas.width = width; canvas.height = height
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height)
+        setAttachedImages(prev => [...prev, canvas.toDataURL("image/jpeg", 0.85)])
+      }
+      img.src = original
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = Array.from(e.clipboardData.items)
+    items.filter(i => i.type.startsWith("image/")).forEach(i => {
+      const f = i.getAsFile()
+      if (f) processImageFile(f)
+    })
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragging(false)
+    Array.from(e.dataTransfer.files).forEach(processImageFile)
+  }
+
   async function sendMessage() {
     const text = input.trim()
-    if (!text || loading) return
+    if (!text && attachedImages.length === 0) return
+    if (loading) return
     setInput("")
+    setAttachedImages([])
     setLoading(true)
 
-    const userMsg: Msg = { role: "user", text, time: getTime() }
+    const userMsg: Msg = { role: "user", text, time: getTime(), images: attachedImages.length > 0 ? [...attachedImages] : undefined }
     const updated = [...msgs, userMsg]
     setMsgs(updated)
 
@@ -139,6 +181,13 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
                 borderBottomRightRadius: m.role === "user" ? 3 : 11,
                 wordBreak: "break-word", overflowWrap: "break-word",
               }}>
+                {m.images && m.images.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: m.text ? 6 : 0 }}>
+                    {m.images.map((src, idx) => (
+                      <img key={idx} src={src} alt="" style={{ width: 68, height: 68, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(0,0,0,0.12)", display: "block" }} />
+                    ))}
+                  </div>
+                )}
                 {m.text.split("\n").map((l, j) => <span key={j}>{l}<br /></span>)}
               </div>
               <div style={{ fontSize: 9.5, color: "#3d3d3d", padding: "0 2px" }}>{m.time}</div>
@@ -157,27 +206,58 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
         </div>
 
         {/* Input bar */}
-        <div style={{ padding: "8px 10px 10px", flexShrink: 0 }}>
+        <div
+          style={{ padding: "8px 10px 10px", flexShrink: 0 }}
+          onDrop={handleDrop}
+          onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+          onDragLeave={() => setIsDragging(false)}
+        >
           {voiceError && (
             <div style={{ marginBottom: 6, padding: "6px 10px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 20, fontSize: 11, color: "#f87171", display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ flex: 1 }}>{voiceError}</span>
               <button onClick={() => setVoiceError(null)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", background: "#2f2f2f", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, overflow: "hidden" }}>
+          <div style={{ display: "flex", flexDirection: "column", background: isDragging ? "rgba(62,207,142,0.04)" : "#2f2f2f", border: `1px solid ${isDragging ? "rgba(62,207,142,0.5)" : "rgba(255,255,255,0.08)"}`, borderRadius: 24, transition: "border-color 0.15s", overflow: "hidden" }}>
+            {/* Attached image previews */}
+            {attachedImages.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "10px 14px 0" }}>
+                {attachedImages.map((src, idx) => (
+                  <div key={idx} style={{ position: "relative", width: 54, height: 54, flexShrink: 0 }}>
+                    <img src={src} alt="" style={{ width: 54, height: 54, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", display: "block" }} />
+                    <button
+                      onClick={() => setAttachedImages(prev => prev.filter((_, i) => i !== idx))}
+                      style={{ position: "absolute", top: -5, right: -5, width: 16, height: 16, borderRadius: "50%", background: "#333", border: "1px solid rgba(255,255,255,0.15)", color: "#ccc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, lineHeight: 1, padding: 0 }}
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{ padding: "12px 14px 0 14px" }}>
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px" }}
                 onKeyDown={handleKey}
-                placeholder="Görev komutu yazın…"
+                onPaste={handlePaste}
+                placeholder={isDragging ? "Görseli bırak…" : "Görev komutu yazın…"}
                 rows={1}
                 disabled={loading}
                 style={{ width: "100%", fontFamily: "inherit", fontSize: 15, color: "#ececec", background: "transparent", border: "none", outline: "none", resize: "none", minHeight: 24, maxHeight: 200, lineHeight: 1.6, padding: 0 }}
               />
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "4px 8px 8px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px 8px" }}>
+              {/* Left: attach button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                title="Görsel ekle"
+                style={{ width: 32, height: 32, borderRadius: "50%", background: "transparent", border: "none", color: isDragging ? "#3ecf8e" : "#b4b4b4", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: 0, transition: "color 0.15s, background 0.15s" }}
+                onMouseEnter={e => { (e.target as HTMLElement).style.background = "rgba(255,255,255,0.08)" }}
+                onMouseLeave={e => { (e.target as HTMLElement).style.background = "transparent" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+              {/* Right: mic + send */}
               <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <VoiceInputButton
                   onTranscript={(text) => setInput(prev => prev ? prev + " " + text : text)}
@@ -186,24 +266,32 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
                 />
                 <button
                   onClick={sendMessage}
-                  disabled={loading || !input.trim()}
+                  disabled={loading || (!input.trim() && attachedImages.length === 0)}
                   title="Gönder"
                   style={{
                     width: 32, height: 32, borderRadius: "50%",
-                    background: (loading || !input.trim()) ? "#676767" : "#fff",
+                    background: (loading || (!input.trim() && attachedImages.length === 0)) ? "#676767" : "#fff",
                     border: "none",
-                    cursor: (loading || !input.trim()) ? "default" : "pointer",
+                    cursor: (loading || (!input.trim() && attachedImages.length === 0)) ? "default" : "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     flexShrink: 0, transition: "background 0.15s",
                   }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke={(loading || !input.trim()) ? "#929292" : "#0c0c0c"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke={(loading || (!input.trim() && attachedImages.length === 0)) ? "#929292" : "#0c0c0c"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               </div>
             </div>
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: "none" }}
+            onChange={e => { Array.from(e.target.files || []).forEach(processImageFile); e.target.value = "" }}
+          />
         </div>
       </div>
 
