@@ -1,13 +1,15 @@
 import fs from "fs"
 import path from "path"
-import { DoneButton } from "./DoneButton"
+import { TaskCard } from "./TaskCard"
 
 // Always read fresh data — never cache this page
 export const dynamic = "force-dynamic"
 
+type Task = { id: string; title: string; body: string; iterations: number }
+
 type Column = {
   title: string
-  tasks: { id: string; title: string; body: string }[]
+  tasks: Task[]
   color: string
   dot: string
 }
@@ -16,9 +18,7 @@ function parseTasks(md: string): Column[] {
   const columns: Column[] = [
     { title: "To Do",           tasks: [], color: "#3d3d3d", dot: "#666" },
     { title: "In Progress",     tasks: [], color: "#1a3a2a", dot: "#3ecf8e" },
-    { title: "Self Review",     tasks: [], color: "#1a2a3a", dot: "#60a5fa" },
     { title: "In Review",       tasks: [], color: "#2a2a1a", dot: "#fbbf24" },
-    { title: "Needs Iteration", tasks: [], color: "#2a1a1a", dot: "#f87171" },
     { title: "Done",            tasks: [], color: "#1a1a1a", dot: "#555" },
   ]
 
@@ -36,10 +36,21 @@ function parseTasks(md: string): Column[] {
       if (m) {
         const raw = m[1].trim()
         const idMatch = raw.match(/^(#\d+)\s+(.+)$/)
+        let body = m[2].trim()
+
+        // Parse iteration count from body: [iterations: N]
+        let iterations = 0
+        const iterMatch = body.match(/\[iterations:\s*(\d+)\]/)
+        if (iterMatch) {
+          iterations = parseInt(iterMatch[1], 10)
+          body = body.replace(/\s*\[iterations:\s*\d+\]/, "").trim()
+        }
+
         col.tasks.push({
           id: idMatch ? idMatch[1] : "",
           title: idMatch ? idMatch[2] : raw,
-          body: m[2].trim(),
+          body,
+          iterations,
         })
       }
     }
@@ -74,7 +85,7 @@ export default function TasksPage() {
       {/* Board */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(6, minmax(200px, 1fr))",
+        gridTemplateColumns: "repeat(4, minmax(200px, 1fr))",
         gap: 12,
         overflowX: "auto",
       }}>
@@ -128,54 +139,7 @@ export default function TasksPage() {
                 </div>
               ) : (
                 col.tasks.map((task, i) => (
-                  <div key={i} style={{
-                    background: "#161616",
-                    border: `1px solid #222`,
-                    borderLeft: `3px solid ${col.dot}`,
-                    borderRadius: 8,
-                    padding: "12px 14px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 6,
-                  }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                      {task.id && (
-                        <span style={{
-                          color: col.title === "Done" ? "#555" : "#e5e5e5",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          flexShrink: 0,
-                        }}>
-                          {task.id}
-                        </span>
-                      )}
-                      <span style={{
-                        color: col.title === "Done" ? "#555" : "#e5e5e5",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        lineHeight: 1.4,
-                        textDecoration: col.title === "Done" ? "line-through" : "none",
-                      }}>
-                        {task.title}
-                      </span>
-                    </div>
-                    {task.body && (
-                      <span style={{
-                        color: "#555",
-                        fontSize: 11,
-                        lineHeight: 1.6,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}>
-                        {task.body}
-                      </span>
-                    )}
-                    {col.title === "In Review" && (
-                      <DoneButton taskTitle={task.id ? `${task.id} ${task.title}` : task.title} />
-                    )}
-                  </div>
+                  <TaskCard key={i} task={task} colTitle={col.title} dotColor={col.dot} />
                 ))
               )}
             </div>
