@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { brandDataToGuide } from "@/lib/brandDataToGuide"
-import { getSession, clearSession } from "@/lib/session"
+import { getSession, signOut } from "@/lib/session"
 import { VoiceInputButton } from "@/components/VoiceInputButton"
 
 type Design = {
@@ -243,14 +243,14 @@ export default function Studio() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  function handleLogout() {
-    clearSession()
+  async function handleLogout() {
+    await signOut()
     router.push("/login")
   }
 
   // Load from localStorage + one-time seed of static designs
   useEffect(() => {
-    if (!getSession()) { router.push("/login"); return }
+    getSession().then(s => { if (!s) router.push("/login") })
     try {
       const s = localStorage.getItem("wt_designs_v3")
       let existing: Design[] = s ? JSON.parse(s) : []

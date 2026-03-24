@@ -1,21 +1,29 @@
-const KEY = "wt_session_v1"
+import { createClient } from "@/lib/supabase/client"
 
-export type Session = { loggedAt: number }
+/**
+ * Returns a Supabase session if the user logged in via Google OAuth,
+ * or a minimal object if they used the password fallback.
+ * Returns null if not authenticated.
+ */
+export async function getSession() {
+  // Check Supabase OAuth session first
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session) return session
 
-export function getSession(): Session | null {
-  if (typeof window === "undefined") return null
-  try {
-    const raw = localStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as Session) : null
-  } catch {
-    return null
+  // Fallback: check password-based cookie
+  if (typeof document !== "undefined" && document.cookie.includes("wt_pass_auth=1")) {
+    return { user: { email: "password-user" }, access_token: "" } as unknown as NonNullable<typeof session>
   }
+
+  return null
 }
 
-export function setSession() {
-  localStorage.setItem(KEY, JSON.stringify({ loggedAt: Date.now() }))
-}
-
-export function clearSession() {
-  localStorage.removeItem(KEY)
+export async function signOut() {
+  const supabase = createClient()
+  await supabase.auth.signOut()
+  // Also clear the password cookie
+  if (typeof document !== "undefined") {
+    document.cookie = "wt_pass_auth=; path=/; max-age=0"
+  }
 }
