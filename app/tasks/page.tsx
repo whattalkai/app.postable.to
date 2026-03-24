@@ -138,10 +138,9 @@ export default function TasksPage() {
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                       {task.id && (
                         <span style={{
-                          color: "#444",
-                          fontSize: 10,
-                          fontWeight: 700,
-                          fontFamily: "monospace",
+                          color: col.title === "Done" ? "#555" : "#e5e5e5",
+                          fontSize: 13,
+                          fontWeight: 600,
                           flexShrink: 0,
                         }}>
                           {task.id}
