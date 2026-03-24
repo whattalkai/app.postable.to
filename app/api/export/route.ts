@@ -97,12 +97,13 @@ export async function POST(req: Request) {
     // the time we start capturing). Seeking directly via currentTime is
     // frame-accurate and much faster (no waiting between frames).
     if (mode === "frames") {
-      const frameCount = Math.floor((duration / 1000) * fps)
-      const frameInterval = 1000 / fps
+      const frameCount = Math.round((duration / 1000) * fps)
       const frames: string[] = []
 
       for (let i = 0; i < frameCount; i++) {
-        const currentTimeMs = i * frameInterval
+        // Distribute frames evenly from t=0 to t=duration so the last frame
+        // always captures the final animation state (e.g. logo at t=6000ms)
+        const currentTimeMs = Math.round((i / (frameCount - 1)) * duration)
 
         await page.evaluate((t) => {
           document.getAnimations().forEach(anim => {
