@@ -6,7 +6,6 @@
 
 
 
-- **#17 Tasks page chat UI** — Add the same chat UI design from Studio/Brand pages to the left side of the tasks page. Same pill input bar, voice input, typing indicator, message bubbles. Connected to the `/api/tasks-chat` endpoint. The task board stays on the right. After the agent updates TASKS.md, the board should refresh to show changes.
 
 - **#13 Set up Google Login for the project** — Add Google OAuth authentication so users can sign in with their Google account. Set up the auth provider, login/logout flow, session management, and protect relevant pages behind authentication.
 
@@ -30,6 +29,8 @@
 
 - **#16 Task Agent API** — AI-powered `/api/tasks-chat` endpoint with Claude tool calling. Supports: list, add, move, comment, update, and delete tasks. Turkish + English. Reads/writes TASKS.md (local fs in dev, GitHub API on Vercel). File: `app/api/tasks-chat/route.ts`.
 - **#18 Task detail dialogue with dev explanation + iteration tracking** — Created `TaskCard` client component. Clicking any task card opens a detail modal showing: full task ID badge (color-matched to column), status badge, title, and the complete dev explanation without truncation. Backtick-wrapped code rendered as styled `<code>` elements. Iteration count parsed from `[iterations: N]` tag in TASKS.md — displayed as a colored badge (gray ×1, yellow ×2, red ×3+) on both the card and modal header. Modal has close button and Mark as Done for In Review tasks. Files: `app/tasks/TaskCard.tsx` (new), `app/tasks/page.tsx`.
+
+- **#17 Tasks page chat UI** — Added Studio-style chat panel to the left side of the tasks page. Same pill input bar, voice input (VoiceInputButton), typing indicator (bouncing dots), message bubbles. Connected to `/api/tasks-chat` endpoint. Board auto-refreshes via `router.refresh()` when the agent modifies TASKS.md. Chat history persisted in localStorage (`wt_tasks_chat_v1`). Chat panel toggleable via button. Files: `app/tasks/TasksBoard.tsx` (new), `app/tasks/page.tsx` (simplified to Server Component wrapper).
 
 <!-- Tasks confirmed working, waiting for Cemre's approval -->
 

@@ -1,6 +1,6 @@
 import fs from "fs"
 import path from "path"
-import { TaskCard } from "./TaskCard"
+import { TasksBoard } from "./TasksBoard"
 
 // Always read fresh data — never cache this page
 export const dynamic = "force-dynamic"
@@ -64,88 +64,5 @@ export default function TasksPage() {
   const md = fs.existsSync(mdPath) ? fs.readFileSync(mdPath, "utf-8") : ""
   const columns = parseTasks(md)
 
-  return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#0d0d0d",
-      fontFamily: "'Inter', system-ui, sans-serif",
-      padding: "32px",
-      boxSizing: "border-box",
-    }}>
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 600, margin: 0, letterSpacing: "-0.02em" }}>
-          Tasks
-        </h1>
-        <p style={{ color: "#555", fontSize: 13, margin: "4px 0 0" }}>
-          {new Date().toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-        </p>
-      </div>
-
-      {/* Board */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, minmax(200px, 1fr))",
-        gap: 12,
-        overflowX: "auto",
-      }}>
-        {columns.map(col => (
-          <div key={col.title} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 200 }}>
-            {/* Column header */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 12px",
-              background: "#161616",
-              borderRadius: 8,
-              border: "1px solid #222",
-            }}>
-              <span style={{
-                width: 8, height: 8, borderRadius: "50%",
-                background: col.dot, flexShrink: 0,
-                boxShadow: col.dot !== "#555" && col.dot !== "#666" ? `0 0 6px ${col.dot}55` : "none",
-              }} />
-              <span style={{ color: "#ccc", fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                {col.title}
-              </span>
-              <span style={{
-                marginLeft: "auto",
-                background: "#222",
-                color: "#666",
-                borderRadius: 10,
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "1px 7px",
-                minWidth: 18,
-                textAlign: "center",
-              }}>
-                {col.tasks.length}
-              </span>
-            </div>
-
-            {/* Tasks */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {col.tasks.length === 0 ? (
-                <div style={{
-                  padding: "20px 12px",
-                  borderRadius: 8,
-                  border: "1px dashed #222",
-                  color: "#333",
-                  fontSize: 12,
-                  textAlign: "center",
-                }}>
-                  Empty
-                </div>
-              ) : (
-                col.tasks.map((task, i) => (
-                  <TaskCard key={i} task={task} colTitle={col.title} dotColor={col.dot} />
-                ))
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+  return <TasksBoard columns={columns} />
 }
