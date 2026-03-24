@@ -2,6 +2,9 @@ import fs from "fs"
 import path from "path"
 import { DoneButton } from "./DoneButton"
 
+// Always read fresh data — never cache this page
+export const dynamic = "force-dynamic"
+
 type Column = {
   title: string
   tasks: { id: string; title: string; body: string }[]
