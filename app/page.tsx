@@ -429,7 +429,7 @@ export default function Studio() {
       persist(updated)
       const finalDesign = { ...d, id: designId }
       setActive(finalDesign); setCaption(d.caption); setHashtags(d.hashtags)
-      addAiMsg(designId, `✅ "${d.title}" hazır!\n\nNe yapmak istiyorsun?\n• "caption'ı kısalt"\n• "yeni varyasyon yap"`)
+      addAiMsg(designId, `✅ "${d.title}" tasarımını oluşturdum! Önizlemeyi sağda görebilirsin.\n\nCaption ve hashtag'ler de hazır — sağ panelden düzenleyebilirsin.\n\nDeğişiklik istersen yaz, örneğin:\n• "başlığı büyüt"\n• "arka planı mora çevir"\n• "logoyu kaldır"`)
     } catch {
       setTyping(false)
       addAiMsg(designId, "❌ Bağlantı hatası. Tekrar dene.")
@@ -463,7 +463,7 @@ export default function Studio() {
       persist(updated)
       const next = updated.find(d => d.id === active.id)!
       setActive(next)
-      addAiMsg(designId, "✅ Değişiklik uygulandı! Başka bir düzenleme ister misiniz?")
+      addAiMsg(designId, data.message ? `✅ ${data.message}` : "✅ Değişiklik uygulandı! Başka bir düzenleme ister misiniz?")
     } catch {
       setTyping(false)
       addAiMsg(designId, "❌ Bağlantı hatası. Tekrar dene.")

@@ -4,7 +4,7 @@ const client = new Anthropic()
 
 const EDITOR_PROMPT = `Sen WhatTalk.ai için bir kreatif tasarımcısın.
 Sana mevcut bir HTML tasarımı ve kullanıcının düzenleme isteği verilecek.
-Tasarımı isteğe göre düzenleyip SADECE değiştirilmiş HTML'i döndür.
+Tasarımı isteğe göre düzenle ve sonucu JSON formatında döndür.
 
 ZORUNLU KURALLAR:
 - Orijinal tasarımın genel yapısını, stilini, boyutlarını ve animasyonlarını koru
@@ -13,7 +13,15 @@ ZORUNLU KURALLAR:
 - Font: sadece Inter — asla değiştirme
 - Asla "AI" yazma — her zaman "Yapay Zeka" kullan
 - PNG/MP4 indir butonları gibi export araçlarını kaldırma isteği gelirse: HTML'den o button/div'i tamamen çıkar
-- Sadece HTML döndür — markdown, açıklama, kod bloğu çerçevesi YASAK`
+
+ÇIKTI FORMATI — kesinlikle şu JSON formatında döndür, başka hiçbir şey yazma:
+{"html": "...düzenlenmiş tam HTML kodu...", "message": "...kullanıcıya doğal, sıcak ve kısa bir Türkçe yanıt. Ne yaptığını 1-2 cümleyle açıkla. Robotik olma, doğal konuş..."}
+
+message örnekleri:
+- "Mor butonu kaldırdım, tasarımın geri kalanı aynen duruyor. Başka bir değişiklik ister misin?"
+- "Başlık fontunu büyüttüm ve kalın yaptım, şimdi daha dikkat çekici görünüyor."
+- "Arka plan rengini siyahtan koyu griye değiştirdim. Beğenmediysen geri alabilirim."
+Sadece JSON döndür — markdown, açıklama, kod bloğu çerçevesi YASAK.`
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp"
 
@@ -66,17 +74,33 @@ export async function POST(req: Request) {
       messages: [{ role: "user", content: buildContent(images, editText) }]
     })
 
-    let html = response.content[0].type === "text"
+    let raw = response.content[0].type === "text"
       ? response.content[0].text.trim()
       : ""
 
-    if (html.startsWith("```html")) {
-      html = html.replace(/^```html\n?/, "").replace(/```$/, "").trim()
-    } else if (html.startsWith("```")) {
-      html = html.replace(/^```\n?/, "").replace(/```$/, "").trim()
+    // Strip markdown code fences if present
+    if (raw.startsWith("```json")) {
+      raw = raw.replace(/^```json\n?/, "").replace(/```$/, "").trim()
+    } else if (raw.startsWith("```html")) {
+      raw = raw.replace(/^```html\n?/, "").replace(/```$/, "").trim()
+    } else if (raw.startsWith("```")) {
+      raw = raw.replace(/^```\n?/, "").replace(/```$/, "").trim()
     }
 
-    return Response.json({ html })
+    // Try parsing as JSON (new format with html + message)
+    let html = ""
+    let message = ""
+    try {
+      const parsed = JSON.parse(raw)
+      html = parsed.html || ""
+      message = parsed.message || ""
+    } catch {
+      // Fallback: AI returned raw HTML (old format)
+      html = raw
+      message = ""
+    }
+
+    return Response.json({ html, message })
 
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
