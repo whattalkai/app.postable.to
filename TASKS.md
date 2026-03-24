@@ -18,6 +18,8 @@
 
 ## In Progress
 
+- **#25 Fix: Edit safeguard too strict — blocks valid AI edits** — The safety check added in #14 was rejecting valid edits. It required BOTH `<!doctype`/`<html>` AND `<body>` tags — if AI returned HTML missing any one, edit was rejected. Also the 30% length threshold was too aggressive. Fix: relaxed to require ANY structural tag (`<!doctype`, `<html>`, `<body>`, or `<div>`), reduced length threshold from 30% to 15%, added better debug logging with HTML preview.
+
 
 ## Self Review
 
@@ -36,7 +38,7 @@
 - **#15 Chat AI responds conversationally** — Edit API now returns JSON with `html` + `message` fields. AI writes a natural, context-aware Turkish response explaining what it changed (e.g. "Mor butonu kaldırdım, geri kalanı aynen duruyor"). Generate success message also improved with edit suggestions. Falls back to old message if AI returns raw HTML. Files: `app/api/edit/route.ts`, `app/page.tsx`.
 - **#14 CRITICAL BUG FIX: AI edit can no longer wipe designs** — Root cause: no validation on AI-returned HTML — empty/broken/truncated results were blindly saved, destroying the design. Fix: (1) Server-side safeguard rejects HTML that's missing doctype/body or is <30% of original length, returns original HTML instead. (2) Client-side safeguard also checks length ratio before saving. (3) Prompt now has explicit "NEVER delete the design" instructions. (4) max_tokens increased 8192→16384 to prevent truncation. Files: `app/api/edit/route.ts`, `app/page.tsx`.
 
-- **#18 Task detail dialogue with dev explanation + iteration tracking** — Created `TaskCard` client component. Clicking any task card opens a detail modal showing: full task ID badge (color-matched to column), status badge, title, and the complete dev explanation without truncation. Backtick-wrapped code rendered as styled `<code>` elements. Iteration count parsed from `[iterations: N]` tag in TASKS.md — displayed as a colored badge (gray ×1, yellow ×2, red ×3+) on both the card and modal header. Modal has close button and Mark as Done for In Review tasks. Files: `app/tasks/TaskCard.tsx` (new), `app/tasks/page.tsx`.
+- **#18 Task detail dialogue with dev explanation + iteration tracking** — Clicking any task card opens a detail modal showing: full task ID badge (color-matched to column), status badge, title, and the **full raw dev explanation** from TASKS.md (no AI summary — instant, zero cost). Backtick-wrapped code rendered as styled `<code>` elements. Supports iteration markers (`~~iter:N~~`) in TASKS.md body to display multiple iteration explanations latest-first. Iteration count parsed from `[iterations: N]` tag — displayed as a colored badge (gray ×1, yellow ×2, red ×3+). Modal has close button and Mark as Done for In Review tasks. Files: `app/tasks/TaskCard.tsx`, `app/tasks/page.tsx`.
 
 
 
