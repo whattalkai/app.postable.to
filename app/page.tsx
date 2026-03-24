@@ -215,6 +215,7 @@ export default function Studio() {
   const [isDragging, setIsDragging] = useState(false)
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [animationDone, setAnimationDone] = useState(false)
+  const [videoDuration, setVideoDuration] = useState(6)
 
   // Panel visibility
   const [showList, setShowList] = useState(true)
@@ -609,7 +610,7 @@ export default function Studio() {
       const res = await fetch("/api/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html, mode: "frames", duration: 6000, fps: 3 }),
+        body: JSON.stringify({ html, mode: "frames", duration: videoDuration * 1000, fps: 3 }),
       })
       if (!res.ok) throw new Error(await res.text())
       const { frames, fps: serverFps } = await res.json() as { frames: string[], fps: number }
@@ -843,10 +844,34 @@ export default function Studio() {
           )}
           PNG
         </button>
+        {/* Duration selector */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "0 2px", height: 28 }}>
+          <button
+            onClick={() => setVideoDuration(d => Math.max(1, d - 1))}
+            disabled={videoDuration <= 1 || exporting !== null}
+            style={{ width: 22, height: 22, background: "none", border: "none", color: videoDuration <= 1 ? "#3d3d3d" : "#8e8e8e", cursor: videoDuration <= 1 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, padding: 0, lineHeight: 1 }}
+          >−</button>
+          <input
+            type="number"
+            min={1}
+            max={30}
+            value={videoDuration}
+            onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1 && v <= 30) setVideoDuration(v) }}
+            disabled={exporting !== null}
+            style={{ width: 28, textAlign: "center", background: "none", border: "none", color: "#e6e6e6", fontSize: 11, fontWeight: 600, fontFamily: "inherit", outline: "none", padding: 0, MozAppearance: "textfield", WebkitAppearance: "none" as never }}
+            title="Video süresi (saniye)"
+          />
+          <span style={{ fontSize: 9, color: "#6b6b6b", marginRight: 2, userSelect: "none" }}>sn</span>
+          <button
+            onClick={() => setVideoDuration(d => Math.min(30, d + 1))}
+            disabled={videoDuration >= 30 || exporting !== null}
+            style={{ width: 22, height: 22, background: "none", border: "none", color: videoDuration >= 30 ? "#3d3d3d" : "#8e8e8e", cursor: videoDuration >= 30 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, padding: 0, lineHeight: 1 }}
+          >+</button>
+        </div>
         <button
           onClick={exportMp4}
           disabled={!active || exporting !== null || (!active.html && !active.src)}
-          title="MP4 olarak indir (8 sn)"
+          title={`MP4 olarak indir (${videoDuration} sn)`}
           style={{ ...S.btnSolid, opacity: (!active || exporting !== null || (!active?.html && !active?.src)) ? 0.4 : 1, position: "relative", overflow: "hidden" }}
         >
           {exporting === "mp4" && (
