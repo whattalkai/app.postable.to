@@ -10,9 +10,8 @@
 
 
 
-- **#22 Consider moving Task Agent AI chat to a cheaper LLM model** — Sonnet is overkill for the simple operations handled by the Task Agent AI chat. Evaluate and consider switching to a cheaper/lighter LLM model (e.g. Claude Haiku or similar) to reduce costs without sacrificing quality.
-
 <!-- #23 moved to In Progress -->
+<!-- #22 moved to In Review -->
 
 
 <!-- Add new tasks here -->
@@ -26,6 +25,8 @@
 <!-- Tasks being self-reviewed -->
 
 ## In Review
+
+- **#22 Consider moving Task Agent AI chat to a cheaper LLM model** — Switched model from `claude-sonnet-4-6` to `claude-haiku-4-5-20251001` in `app/api/tasks-chat/route.ts`. Both call sites updated (initial call + tool-use loop continuation). Haiku handles simple CRUD operations on TASKS.md at a fraction of Sonnet cost with no quality loss for this use case.
 
 - **#20 Video duration & speed control** — Added `− N sn +` stepper control between PNG and MP4 buttons in the toolbar. Users can set video duration from 1–30 seconds. Default is 6s. Value is sent to the export API as `duration: videoDuration * 1000`. MP4 button tooltip dynamically shows chosen duration. File: `app/page.tsx`.
 
