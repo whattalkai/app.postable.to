@@ -28,14 +28,33 @@ function LoginContent() {
   async function handleGoogle() {
     setGoogleLoading(true)
     setError(false)
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-    if (error) {
+
+    // Safety timeout: if redirect doesn't happen within 8s, reset button
+    const timeout = setTimeout(() => {
+      setGoogleLoading(false)
+      setError(true)
+    }, 8000)
+
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      if (error) {
+        clearTimeout(timeout)
+        console.error("Google sign-in error:", error.message)
+        setError(true)
+        setGoogleLoading(false)
+      } else if (data?.url) {
+        // Explicit redirect — don't rely on auto-redirect
+        window.location.href = data.url
+      }
+    } catch (err) {
+      clearTimeout(timeout)
+      console.error("Google sign-in exception:", err)
       setError(true)
       setGoogleLoading(false)
     }
@@ -139,7 +158,11 @@ function LoginContent() {
           />
           {error && (
             <div style={{ color: "#EF4444", fontSize: 13 }}>
-              {authError ? "Google girişi başarısız. Tekrar deneyin." : "Yanlış parola. Tekrar deneyin."}
+              {authError
+                ? "Google girişi başarısız. Tekrar deneyin."
+                : googleLoading === false && !value
+                  ? "Google ile bağlantı kurulamadı. Tekrar deneyin."
+                  : "Yanlış parola. Tekrar deneyin."}
             </div>
           )}
           <button
