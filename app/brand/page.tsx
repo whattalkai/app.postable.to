@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { getSession, signOut } from "@/lib/session"
 import { VoiceInputButton } from "@/components/VoiceInputButton"
+import { userKey, migrateIfNeeded } from "@/lib/userStorage"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Color = { name: string; hex: string; usage: string }
@@ -72,6 +73,7 @@ export default function BrandPage() {
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [attachedImages, setAttachedImages] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -80,13 +82,21 @@ export default function BrandPage() {
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   useEffect(() => {
-    getSession().then(s => { if (!s) { router.push("/login"); return } })
-    try {
-      const b = localStorage.getItem("wt_brand_data_v1")
-      if (b) setBrand(JSON.parse(b))
-      const c = localStorage.getItem("wt_brand_chat_v1")
-      if (c) setMsgs(JSON.parse(c))
-    } catch {}
+    getSession().then(s => {
+      if (!s) { router.push("/login"); return }
+      const email = s.user?.email ?? null
+      setUserEmail(email)
+
+      migrateIfNeeded("wt_brand_data_v1", email)
+      migrateIfNeeded("wt_brand_chat_v1", email)
+
+      try {
+        const b = localStorage.getItem(userKey("wt_brand_data_v1", email))
+        if (b) setBrand(JSON.parse(b))
+        const c = localStorage.getItem(userKey("wt_brand_chat_v1", email))
+        if (c) setMsgs(JSON.parse(c))
+      } catch {}
+    })
   }, [router])
 
   useEffect(() => {
@@ -101,7 +111,7 @@ export default function BrandPage() {
 
   function persistBrand(data: BrandData) {
     setBrand(data)
-    try { localStorage.setItem("wt_brand_data_v1", JSON.stringify(data)) } catch {}
+    try { localStorage.setItem(userKey("wt_brand_data_v1", userEmail), JSON.stringify(data)) } catch {}
   }
 
   function saveBrand() {
@@ -201,7 +211,7 @@ export default function BrandPage() {
       const { clean, updated } = applyBrandUpdates(fullText, brand)
       persistBrand(updated)
       setMsgs(prev => { const n = [...prev]; n[n.length - 1] = { ...aiPlaceholder, text: clean || fullText.trim() }; return n })
-      try { localStorage.setItem("wt_brand_chat_v1", JSON.stringify([...history, { ...aiPlaceholder, text: clean || fullText.trim() }])) } catch {}
+      try { localStorage.setItem(userKey("wt_brand_chat_v1", userEmail), JSON.stringify([...history, { ...aiPlaceholder, text: clean || fullText.trim() }])) } catch {}
     } catch {
       setMsgs(prev => { const n = [...prev]; n[n.length - 1] = { role: "ai", text: "❌ Bağlantı hatası. Tekrar dene.", time: getTime() }; return n })
     } finally { setStreaming(false) }
