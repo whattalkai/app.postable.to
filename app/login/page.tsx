@@ -21,41 +21,48 @@ function LoginContent() {
   const authError = searchParams.get("error") === "auth"
 
   const [value, setValue] = useState("")
-  const [error, setError] = useState(authError)
+  const [errorType, setErrorType] = useState<"google" | "password" | "callback" | null>(authError ? "callback" : null)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
   async function handleGoogle() {
     setGoogleLoading(true)
-    setError(false)
+    setErrorType(null)
 
-    // Safety timeout: if redirect doesn't happen within 8s, reset button
+    // Safety timeout: if redirect doesn't happen within 10s, reset button
     const timeout = setTimeout(() => {
+      console.error("[Login] Google sign-in timeout — redirect never happened")
       setGoogleLoading(false)
-      setError(true)
-    }, 8000)
+      setErrorType("google")
+    }, 10000)
 
     try {
       const supabase = createClient()
+      console.log("[Login] Calling signInWithOAuth...", { origin: window.location.origin })
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       })
+      console.log("[Login] signInWithOAuth result:", { data, error: error?.message })
       if (error) {
         clearTimeout(timeout)
-        console.error("Google sign-in error:", error.message)
-        setError(true)
+        console.error("[Login] Google sign-in error:", error.message)
+        setErrorType("google")
         setGoogleLoading(false)
       } else if (data?.url) {
         // Explicit redirect — don't rely on auto-redirect
+        console.log("[Login] Redirecting to:", data.url.substring(0, 100) + "...")
         window.location.href = data.url
+      } else {
+        // data exists but no URL — auto-redirect should have happened
+        console.log("[Login] No URL in data, expecting auto-redirect...", data)
       }
     } catch (err) {
       clearTimeout(timeout)
-      console.error("Google sign-in exception:", err)
-      setError(true)
+      console.error("[Login] Google sign-in exception:", err)
+      setErrorType("google")
       setGoogleLoading(false)
     }
   }
@@ -63,14 +70,14 @@ function LoginContent() {
   function handlePassword(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    setError(false)
+    setErrorType(null)
 
     if (value === PASS) {
       // Set a simple cookie so server can also check
       document.cookie = "wt_pass_auth=1; path=/; max-age=2592000"
       router.push("/")
     } else {
-      setError(true)
+      setErrorType("password")
       setLoading(false)
       setValue("")
     }
@@ -144,10 +151,10 @@ function LoginContent() {
             type="password"
             placeholder="Parola"
             value={value}
-            onChange={e => { setValue(e.target.value); setError(false) }}
+            onChange={e => { setValue(e.target.value); setErrorType(null) }}
             style={{
               background: "#181818",
-              border: error ? "1px solid #EF4444" : "1px solid #2a2a2a",
+              border: errorType ? "1px solid #EF4444" : "1px solid #2a2a2a",
               borderRadius: 8,
               color: "#fff",
               fontSize: 15,
@@ -156,11 +163,11 @@ function LoginContent() {
               transition: "border-color 0.15s",
             }}
           />
-          {error && (
+          {errorType && (
             <div style={{ color: "#EF4444", fontSize: 13 }}>
-              {authError
+              {errorType === "callback"
                 ? "Google girişi başarısız. Tekrar deneyin."
-                : googleLoading === false && !value
+                : errorType === "google"
                   ? "Google ile bağlantı kurulamadı. Tekrar deneyin."
                   : "Yanlış parola. Tekrar deneyin."}
             </div>
