@@ -25,6 +25,8 @@
 
 ## In Review
 
+- **#27 Isolate user accounts — each Gmail gets its own data** — All localStorage data (designs, brand, chat history) was stored under global keys — every user saw the same data. Fix: created `lib/userStorage.ts` utility that namespaces all localStorage keys by the user's email (e.g. `wt_designs_v3__user@gmail.com`). Updated all three pages (Studio, Brand, Tasks) to scope reads/writes by user email. One-time migration copies existing data to the logged-in user's scoped keys so no data is lost. New users get a blank fresh account. Files: `lib/userStorage.ts` (new), `app/page.tsx`, `app/brand/page.tsx`, `app/tasks/TasksBoard.tsx`.
+
 - **#26 Fix: Google login stuck on "Yönlendiriliyor..." for new users** — Google OAuth button gets stuck in loading state, never redirects to Google. Root cause: `signInWithOAuth` result was not explicitly handled — code only checked for `error` but didn't use `data.url` for manual redirect. Also no timeout fallback if redirect silently fails. Fix: (1) Explicit `window.location.href = data.url` redirect as fallback, (2) 8-second safety timeout resets button if redirect never fires, (3) try/catch for unhandled exceptions, (4) Better error logging in callback route for debugging new user issues. **NOTE for Cemre:** Check Supabase Dashboard → Authentication → URL Configuration → Redirect URLs — make sure `https://app.postable.to/auth/callback` is listed (currently only `portal.whattalk.ai` shows in logs). Files: `app/login/page.tsx`, `app/auth/callback/route.ts`.
 
 

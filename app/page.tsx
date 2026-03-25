@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { brandDataToGuide } from "@/lib/brandDataToGuide"
 import { getSession, signOut } from "@/lib/session"
+import { userKey, migrateIfNeeded } from "@/lib/userStorage"
 import { VoiceInputButton } from "@/components/VoiceInputButton"
 
 type Design = {
@@ -216,6 +217,7 @@ export default function Studio() {
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [animationDone, setAnimationDone] = useState(false)
   const [videoDuration, setVideoDuration] = useState(6)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   // Panel visibility
   const [showList, setShowList] = useState(true)
@@ -250,28 +252,39 @@ export default function Studio() {
 
   // Load from localStorage + one-time seed of static designs
   useEffect(() => {
-    getSession().then(s => { if (!s) router.push("/login") })
-    try {
-      const s = localStorage.getItem("wt_designs_v3")
-      let existing: Design[] = s ? JSON.parse(s) : []
+    getSession().then(s => {
+      if (!s) { router.push("/login"); return }
+      const email = s.user?.email ?? null
+      setUserEmail(email)
 
-      if (!localStorage.getItem("wt_designs_seeded_v2")) {
-        const aiOnly = existing.filter(d => !d.src)
-        existing = [...STATIC_DESIGNS, ...aiOnly]
-        localStorage.setItem("wt_designs_v3", JSON.stringify(existing))
-        localStorage.setItem("wt_designs_seeded_v2", "1")
-      }
+      // Migrate old global keys to user-scoped keys (one-time)
+      migrateIfNeeded("wt_designs_v3", email)
+      migrateIfNeeded("wt_designs_seeded_v2", email)
+      migrateIfNeeded("wt_chat_v1", email)
+      migrateIfNeeded("wt_brand_data_v1", email)
 
-      setDesigns(existing)
-      if (existing.length > 0) { setActive(existing[0]); setCaption(existing[0].caption); setHashtags(existing[0].hashtags) }
-      // Load brand data and derive guide
-      const bd = localStorage.getItem("wt_brand_data_v1")
-      if (bd) setBrandGuide(brandDataToGuide(JSON.parse(bd)))
+      try {
+        const s2 = localStorage.getItem(userKey("wt_designs_v3", email))
+        let existing: Design[] = s2 ? JSON.parse(s2) : []
 
-      // Load per-design chat history
-      const ch = localStorage.getItem("wt_chat_v1")
-      if (ch) setChatHistory(JSON.parse(ch))
-    } catch {}
+        if (!localStorage.getItem(userKey("wt_designs_seeded_v2", email))) {
+          const aiOnly = existing.filter(d => !d.src)
+          existing = [...STATIC_DESIGNS, ...aiOnly]
+          localStorage.setItem(userKey("wt_designs_v3", email), JSON.stringify(existing))
+          localStorage.setItem(userKey("wt_designs_seeded_v2", email), "1")
+        }
+
+        setDesigns(existing)
+        if (existing.length > 0) { setActive(existing[0]); setCaption(existing[0].caption); setHashtags(existing[0].hashtags) }
+        // Load brand data and derive guide
+        const bd = localStorage.getItem(userKey("wt_brand_data_v1", email))
+        if (bd) setBrandGuide(brandDataToGuide(JSON.parse(bd)))
+
+        // Load per-design chat history
+        const ch = localStorage.getItem(userKey("wt_chat_v1", email))
+        if (ch) setChatHistory(JSON.parse(ch))
+      } catch {}
+    })
   }, [])
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }) }, [msgs, typing])
@@ -286,13 +299,13 @@ export default function Studio() {
   // Sync brand guide when Brand page saves data
   useEffect(() => {
     function onStorage(e: StorageEvent) {
-      if (e.key === "wt_brand_data_v1" && e.newValue) {
+      if (e.key === userKey("wt_brand_data_v1", userEmail) && e.newValue) {
         try { setBrandGuide(brandDataToGuide(JSON.parse(e.newValue))) } catch {}
       }
     }
     window.addEventListener("storage", onStorage)
     return () => window.removeEventListener("storage", onStorage)
-  }, [])
+  }, [userEmail])
 
   // Scale iframe to fill wrap
   const scaleIframe = useCallback(() => {
@@ -350,14 +363,14 @@ export default function Studio() {
 
   function persist(list: Design[]) {
     setDesigns(list)
-    localStorage.setItem("wt_designs_v3", JSON.stringify(list))
+    localStorage.setItem(userKey("wt_designs_v3", userEmail), JSON.stringify(list))
   }
 
   function addAiMsg(designId: string, text: string) {
     setChatHistory(prev => {
       const existing = prev[designId] ?? []
       const updated = { ...prev, [designId]: [...existing, { role: "ai" as const, text, time: getTime() }] }
-      try { localStorage.setItem("wt_chat_v1", JSON.stringify(updated)) } catch {}
+      try { localStorage.setItem(userKey("wt_chat_v1", userEmail), JSON.stringify(updated)) } catch {}
       return updated
     })
   }
@@ -366,7 +379,7 @@ export default function Studio() {
     setChatHistory(prev => {
       const existing = prev[designId] ?? []
       const updated = { ...prev, [designId]: [...existing, { role: "user" as const, text, time: getTime(), images }] }
-      try { localStorage.setItem("wt_chat_v1", JSON.stringify(updated)) } catch {}
+      try { localStorage.setItem(userKey("wt_chat_v1", userEmail), JSON.stringify(updated)) } catch {}
       return updated
     })
   }

@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { TaskCard } from "./TaskCard"
 import { VoiceInputButton } from "@/components/VoiceInputButton"
+import { getSession } from "@/lib/session"
+import { userKey, migrateIfNeeded } from "@/lib/userStorage"
 
 type Task = { id: string; title: string; body: string; iterations: number }
 type Column = { title: string; tasks: Task[]; color: string; dot: string }
@@ -31,6 +33,7 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [attachedImages, setAttachedImages] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -59,12 +62,18 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
     return col
   })
 
-  // Load chat history from localStorage
+  // Load chat history from localStorage (scoped by user email)
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("wt_tasks_chat_v1")
-      if (saved) setMsgs(JSON.parse(saved))
-    } catch {}
+    getSession().then(s => {
+      if (!s) return
+      const email = s.user?.email ?? null
+      setUserEmail(email)
+      migrateIfNeeded("wt_tasks_chat_v1", email)
+      try {
+        const saved = localStorage.getItem(userKey("wt_tasks_chat_v1", email))
+        if (saved) setMsgs(JSON.parse(saved))
+      } catch {}
+    })
   }, [])
 
   useEffect(() => {
@@ -78,7 +87,7 @@ export function TasksBoard({ columns }: { columns: Column[] }) {
   }, [input])
 
   function persistChat(messages: Msg[]) {
-    try { localStorage.setItem("wt_tasks_chat_v1", JSON.stringify(messages)) } catch {}
+    try { localStorage.setItem(userKey("wt_tasks_chat_v1", userEmail), JSON.stringify(messages)) } catch {}
   }
 
   function processImageFile(file: File) {
