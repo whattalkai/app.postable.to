@@ -1,7 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { CONTENT_AGENT_PROMPT } from "@/lib/agents/content"
 import { textToSpeech } from "@/lib/services/elevenlabs"
-import { createAvatarVideo, pollVideoUntilReady } from "@/lib/services/heygen"
+import { generateImage } from "@/lib/services/imageGen"
+import { createAvatarVideo } from "@/lib/services/heygen"
 import { publishToAll } from "@/lib/services/publishing"
 
 const client = new Anthropic()
@@ -14,10 +15,12 @@ interface PipelineRequest {
   targetPlatform?: string
   duration?: number
   brandGuide?: string
-  voiceId: string
-  avatarId: string
+  voiceId?: string
+  referenceAudioUrl?: string // For voice cloning
+  avatarImageUrl: string // Avatar photo for HeyGen
   aspectRatio?: "9:16" | "16:9" | "1:1"
-  imageStyle?: string
+  imageModel?: "nano-banana-pro" | "nano-banana-2" | "nano-banana" | "flux-dev"
+  ttsModel?: "eleven-v3" | "multilingual-v2" | "turbo-v2.5"
   publishTo?: ("instagram" | "youtube" | "tiktok")[]
   skipPublish?: boolean
 }
@@ -27,18 +30,13 @@ export async function POST(req: Request) {
     const body: PipelineRequest = await req.json()
 
     if (!body.topic) return Response.json({ error: "topic is required" }, { status: 400 })
-    if (!body.voiceId) return Response.json({ error: "voiceId is required" }, { status: 400 })
-    if (!body.avatarId) return Response.json({ error: "avatarId is required" }, { status: 400 })
+    if (!body.avatarImageUrl) return Response.json({ error: "avatarImageUrl is required (avatar photo for video)" }, { status: 400 })
 
     const lang = body.language || "tr"
     const platform = body.targetPlatform || "instagram"
     const targetDuration = body.duration || 60
-    const aspectRatio = body.aspectRatio || "9:16"
 
-    const pipelineResult: Record<string, unknown> = {
-      startedAt: new Date().toISOString(),
-      stages: {},
-    }
+    const stages: Record<string, unknown> = {}
 
     // ═══════════════════════════════════════════
     // STAGE 1: Content Agent — Generate script
@@ -63,7 +61,7 @@ export async function POST(req: Request) {
     const contentClean = contentRaw.replace(/^```json\n?/, "").replace(/^```\n?/, "").replace(/```$/, "").trim()
     const content = JSON.parse(contentClean)
 
-    pipelineResult.stages = { content: { status: "done", data: content } }
+    stages.content = { status: "done", scenes: content.scenes?.length || 0 }
     console.log(`[Pipeline] Content ready: ${content.scenes?.length || 0} scenes`)
 
     // ═══════════════════════════════════════════
@@ -72,155 +70,99 @@ export async function POST(req: Request) {
     console.log("[Pipeline] Stage 2: Audio + Image (parallel)")
 
     const [audioResult, imageResult] = await Promise.allSettled([
-      // Audio: Generate voice for full script
-      (async () => {
-        const result = await textToSpeech({
-          text: content.fullScript,
-          voiceId: body.voiceId,
-        })
-        return {
-          audioBase64: result.audioBuffer.toString("base64"),
-          contentType: result.contentType,
-        }
-      })(),
+      // Audio: Generate voice for full script via fal.ai ElevenLabs
+      textToSpeech({
+        text: content.fullScript,
+        voiceId: body.voiceId,
+        model: body.ttsModel || "eleven-v3",
+        referenceAudioUrl: body.referenceAudioUrl,
+      }),
 
-      // Images: Generate per-scene background images
+      // Images: Generate per-scene backgrounds via fal.ai Nano Banana Pro
       (async () => {
-        const openaiKey = process.env.OPENAI_API_KEY
-        if (!openaiKey) return { images: [], skipped: true, reason: "OPENAI_API_KEY not set" }
-
         const images = []
         for (const scene of content.scenes || []) {
           try {
-            const dalleRes = await fetch("https://api.openai.com/v1/images/generations", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${openaiKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model: "dall-e-3",
-                prompt: `${scene.visualDescription}. Professional, clean background for avatar video overlay. Portrait 9:16 orientation. ${body.imageStyle || "modern minimal"}`,
-                n: 1,
-                size: "1024x1792",
-                response_format: "url",
-              }),
+            const result = await generateImage({
+              prompt: `${scene.visualDescription}. Professional, clean background for avatar video overlay. Portrait 9:16 orientation.`,
+              imageSize: "portrait_16_9",
+              model: body.imageModel || "nano-banana-pro",
             })
-
-            if (dalleRes.ok) {
-              const data = await dalleRes.json()
-              images.push({
-                sceneNumber: scene.sceneNumber,
-                imageUrl: data.data?.[0]?.url,
-              })
-            }
+            images.push({
+              sceneNumber: scene.sceneNumber,
+              imageUrl: result[0]?.imageUrl,
+            })
           } catch (e) {
-            console.error(`[Pipeline] Image generation failed for scene ${scene.sceneNumber}:`, e)
+            console.error(`[Pipeline] Image failed for scene ${scene.sceneNumber}:`, e)
           }
         }
-        return { images }
+        return images
       })(),
     ])
 
     const audio = audioResult.status === "fulfilled" ? audioResult.value : null
-    const images = imageResult.status === "fulfilled" ? imageResult.value : null
+    const images = imageResult.status === "fulfilled" ? imageResult.value : []
 
     if (!audio) {
       return Response.json({
         error: "Audio generation failed",
         details: audioResult.status === "rejected" ? audioResult.reason?.message : "Unknown",
-        pipelineResult,
+        stages,
       }, { status: 500 })
     }
 
-    pipelineResult.stages = {
-      ...(pipelineResult.stages as object),
-      audio: { status: "done" },
-      images: { status: images ? "done" : "skipped", count: images?.images?.length || 0 },
-    }
-
+    stages.audio = { status: "done", audioUrl: audio.audioUrl }
+    stages.images = { status: "done", count: images.length }
     console.log("[Pipeline] Audio + Images ready")
 
     // ═══════════════════════════════════════════
-    // STAGE 3: Avatar Video Agent (HeyGen)
+    // STAGE 3: Avatar Video Agent (HeyGen via fal.ai)
     // ═══════════════════════════════════════════
-    console.log("[Pipeline] Stage 3: Avatar Video (HeyGen)")
+    console.log("[Pipeline] Stage 3: Avatar Video (HeyGen via fal.ai)")
 
-    // For HeyGen, we send the full audio + avatar
-    // The scenes are combined into a single video with the avatar speaking
-    const videoScenes = (content.scenes || []).map((scene: { sceneNumber: number; dialogue: string }, index: number) => ({
-      sceneNumber: scene.sceneNumber,
-      dialogue: scene.dialogue,
-      audioBase64: index === 0 ? audio.audioBase64 : undefined, // Full audio on first scene
-      backgroundImageUrl: images?.images?.find((img: { sceneNumber: number }) => img.sceneNumber === scene.sceneNumber)?.imageUrl,
-    }))
-
-    const videoRequest = await createAvatarVideo({
-      avatarId: body.avatarId,
-      scenes: videoScenes,
-      aspectRatio,
-      title: content.title || body.topic,
+    const video = await createAvatarVideo({
+      imageUrl: body.avatarImageUrl,
+      audioUrl: audio.audioUrl,
+      talkingStyle: "expressive",
+      aspectRatio: body.aspectRatio || "9:16",
+      resolution: "1080p",
     })
 
-    console.log(`[Pipeline] HeyGen video created: ${videoRequest.videoId}`)
-
-    // Poll until video is ready
-    const videoStatus = await pollVideoUntilReady(videoRequest.videoId, 300000, 15000)
-
-    pipelineResult.stages = {
-      ...(pipelineResult.stages as object),
-      avatarVideo: {
-        status: "done",
-        videoId: videoStatus.videoId,
-        videoUrl: videoStatus.videoUrl,
-        duration: videoStatus.duration,
-        thumbnailUrl: videoStatus.thumbnailUrl,
-      },
-    }
-
-    console.log(`[Pipeline] Video ready: ${videoStatus.videoUrl}`)
+    stages.avatarVideo = { status: "done", videoUrl: video.videoUrl }
+    console.log(`[Pipeline] Video ready: ${video.videoUrl}`)
 
     // ═══════════════════════════════════════════
     // STAGE 4: Publishing Agent (optional)
     // ═══════════════════════════════════════════
-    if (!body.skipPublish && body.publishTo && body.publishTo.length > 0 && videoStatus.videoUrl) {
+    if (!body.skipPublish && body.publishTo && body.publishTo.length > 0 && video.videoUrl) {
       console.log(`[Pipeline] Stage 4: Publishing to ${body.publishTo.join(", ")}`)
 
       const publishResults = await publishToAll(body.publishTo, {
-        videoUrl: videoStatus.videoUrl,
+        videoUrl: video.videoUrl,
         caption: content.caption || "",
         hashtags: content.hashtags || [],
         title: content.title || body.topic,
         description: content.description || "",
-        thumbnailUrl: videoStatus.thumbnailUrl,
       })
 
-      pipelineResult.stages = {
-        ...(pipelineResult.stages as object),
-        publishing: { status: "done", results: publishResults },
-      }
-
+      stages.publishing = { status: "done", results: publishResults }
       console.log("[Pipeline] Publishing complete")
     } else {
-      pipelineResult.stages = {
-        ...(pipelineResult.stages as object),
-        publishing: { status: "skipped" },
-      }
+      stages.publishing = { status: "skipped" }
     }
-
-    pipelineResult.completedAt = new Date().toISOString()
 
     return Response.json({
       success: true,
-      videoUrl: videoStatus.videoUrl,
-      thumbnailUrl: videoStatus.thumbnailUrl,
+      videoUrl: video.videoUrl,
       content: {
         title: content.title,
         caption: content.caption,
         hashtags: content.hashtags,
         description: content.description,
+        fullScript: content.fullScript,
+        scenes: content.scenes,
       },
-      pipeline: pipelineResult,
+      stages,
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)

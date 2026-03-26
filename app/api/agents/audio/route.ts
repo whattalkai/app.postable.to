@@ -1,25 +1,16 @@
-import { textToSpeech, getVoices } from "@/lib/services/elevenlabs"
+import { textToSpeech, cloneVoiceAndSpeak } from "@/lib/services/elevenlabs"
 
 export async function POST(req: Request) {
   try {
-    const { action, text, scenes, voiceId, stability, similarityBoost, style } = await req.json()
+    const { action, text, scenes, voiceId, model, referenceAudioUrl } = await req.json()
 
-    // List available voices
-    if (action === "list-voices") {
-      const data = await getVoices()
-      return Response.json({ success: true, voices: data.voices })
-    }
-
-    // Generate audio
-    if (!voiceId) {
-      return Response.json({ error: "voiceId is required" }, { status: 400 })
-    }
-
-    const ttsOptions = {
-      voiceId,
-      stability: stability ?? 0.5,
-      similarityBoost: similarityBoost ?? 0.75,
-      style: style ?? 0.5,
+    // Voice cloning mode
+    if (action === "clone-voice") {
+      if (!referenceAudioUrl || !text) {
+        return Response.json({ error: "referenceAudioUrl and text are required for voice cloning" }, { status: 400 })
+      }
+      const result = await cloneVoiceAndSpeak({ audioUrl: referenceAudioUrl, text })
+      return Response.json({ success: true, audioUrl: result.audioUrl })
     }
 
     // If scenes provided, generate per-scene audio
@@ -28,25 +19,28 @@ export async function POST(req: Request) {
 
       for (const scene of scenes) {
         const result = await textToSpeech({
-          ...ttsOptions,
           text: scene.dialogue,
+          voiceId,
+          model: model || "eleven-v3",
+          referenceAudioUrl,
         })
 
         audioSegments.push({
           sceneNumber: scene.sceneNumber,
-          audioBase64: result.audioBuffer.toString("base64"),
-          contentType: result.contentType,
+          audioUrl: result.audioUrl,
         })
       }
 
-      // Also generate full audio if fullScript provided
+      // Also generate full audio if text provided
       let fullAudio = null
       if (text) {
-        const fullResult = await textToSpeech({ ...ttsOptions, text })
-        fullAudio = {
-          audioBase64: fullResult.audioBuffer.toString("base64"),
-          contentType: fullResult.contentType,
-        }
+        const fullResult = await textToSpeech({
+          text,
+          voiceId,
+          model: model || "eleven-v3",
+          referenceAudioUrl,
+        })
+        fullAudio = { audioUrl: fullResult.audioUrl }
       }
 
       return Response.json({ success: true, audioSegments, fullAudio })
@@ -57,14 +51,14 @@ export async function POST(req: Request) {
       return Response.json({ error: "text or scenes required" }, { status: 400 })
     }
 
-    const result = await textToSpeech({ ...ttsOptions, text })
-
-    return new Response(new Uint8Array(result.audioBuffer), {
-      headers: {
-        "Content-Type": result.contentType,
-        "Content-Disposition": 'attachment; filename="speech.mp3"',
-      },
+    const result = await textToSpeech({
+      text,
+      voiceId,
+      model: model || "eleven-v3",
+      referenceAudioUrl,
     })
+
+    return Response.json({ success: true, audioUrl: result.audioUrl })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     console.error("Audio Agent error:", msg)

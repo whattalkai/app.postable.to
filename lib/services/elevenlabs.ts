@@ -1,79 +1,83 @@
-const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
+import { fal } from "@fal-ai/client"
+
+// Configure fal with API key from env
+function ensureFalConfig() {
+  const key = process.env.FAL_KEY
+  if (!key) throw new Error("FAL_KEY is not set")
+  fal.config({ credentials: key })
+}
+
+// ── Text-to-Speech (ElevenLabs via fal.ai) ──
 
 interface TTSOptions {
   text: string
-  voiceId: string
-  modelId?: string
-  stability?: number
-  similarityBoost?: number
-  style?: number
-  speakerBoost?: boolean
+  voiceId?: string
+  model?: "eleven-v3" | "multilingual-v2" | "turbo-v2.5"
+  referenceAudioUrl?: string // For voice cloning
 }
 
 interface TTSResult {
-  audioBuffer: Buffer
+  audioUrl: string
   contentType: string
 }
 
+const TTS_MODELS: Record<string, string> = {
+  "eleven-v3": "fal-ai/elevenlabs/tts/eleven-v3",
+  "multilingual-v2": "fal-ai/elevenlabs/tts/multilingual-v2",
+  "turbo-v2.5": "fal-ai/elevenlabs/tts/turbo-v2.5",
+}
+
 export async function textToSpeech(options: TTSOptions): Promise<TTSResult> {
-  const apiKey = process.env.ELEVENLABS_API_KEY
-  if (!apiKey) throw new Error("ELEVENLABS_API_KEY is not set")
+  ensureFalConfig()
 
-  const {
-    text,
-    voiceId,
-    modelId = "eleven_multilingual_v2",
-    stability = 0.5,
-    similarityBoost = 0.75,
-    style = 0.5,
-    speakerBoost = true,
-  } = options
+  const model = TTS_MODELS[options.model || "eleven-v3"]
 
-  const response = await fetch(
-    `${ELEVENLABS_BASE_URL}/text-to-speech/${voiceId}`,
-    {
-      method: "POST",
-      headers: {
-        "xi-api-key": apiKey,
-        "Content-Type": "application/json",
-        Accept: "audio/mpeg",
-      },
-      body: JSON.stringify({
-        text,
-        model_id: modelId,
-        voice_settings: {
-          stability,
-          similarity_boost: similarityBoost,
-          style,
-          use_speaker_boost: speakerBoost,
-        },
-      }),
-    }
-  )
-
-  if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`ElevenLabs TTS failed (${response.status}): ${error}`)
+  const input: Record<string, unknown> = {
+    text: options.text,
   }
 
-  const arrayBuffer = await response.arrayBuffer()
+  if (options.voiceId) {
+    input.voice = options.voiceId
+  }
+
+  // Voice cloning: pass reference audio
+  if (options.referenceAudioUrl) {
+    input.reference_audio = options.referenceAudioUrl
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await (fal as any).subscribe(model, { input })
+
+  const data = result.data as { audio?: { url: string }; audio_url?: string }
+
   return {
-    audioBuffer: Buffer.from(arrayBuffer),
+    audioUrl: data.audio?.url || data.audio_url || "",
     contentType: "audio/mpeg",
   }
 }
 
-export async function getVoices(): Promise<{ voices: { voice_id: string; name: string; labels: Record<string, string> }[] }> {
-  const apiKey = process.env.ELEVENLABS_API_KEY
-  if (!apiKey) throw new Error("ELEVENLABS_API_KEY is not set")
+// ── Voice Cloning (MiniMax via fal.ai) ──
 
-  const response = await fetch(`${ELEVENLABS_BASE_URL}/voices`, {
-    headers: { "xi-api-key": apiKey },
+interface VoiceCloneOptions {
+  audioUrl: string // 10+ seconds of reference audio
+  text: string
+}
+
+export async function cloneVoiceAndSpeak(options: VoiceCloneOptions): Promise<TTSResult> {
+  ensureFalConfig()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await (fal as any).subscribe("fal-ai/minimax/voice-clone", {
+    input: {
+      reference_audio: options.audioUrl,
+      text: options.text,
+    },
   })
 
-  if (!response.ok) {
-    throw new Error(`ElevenLabs voices failed (${response.status})`)
-  }
+  const data = result.data as { audio?: { url: string }; audio_url?: string }
 
-  return response.json()
+  return {
+    audioUrl: data.audio?.url || data.audio_url || "",
+    contentType: "audio/mpeg",
+  }
 }

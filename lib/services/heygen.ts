@@ -1,147 +1,72 @@
-const HEYGEN_BASE_URL = "https://api.heygen.com/v2"
+import { fal } from "@fal-ai/client"
 
-interface HeyGenScene {
-  sceneNumber: number
-  audioUrl?: string
-  audioBase64?: string
-  backgroundImageUrl?: string
-  backgroundImageBase64?: string
-  dialogue: string
+function ensureFalConfig() {
+  const key = process.env.FAL_KEY
+  if (!key) throw new Error("FAL_KEY is not set")
+  fal.config({ credentials: key })
 }
+
+// ── Avatar Video (HeyGen Avatar IV via fal.ai) ──
 
 interface CreateVideoOptions {
-  avatarId: string
-  scenes: HeyGenScene[]
+  imageUrl: string // Avatar photo / talking photo
+  audioUrl: string // Audio for lip-sync
+  talkingStyle?: "stable" | "expressive"
   aspectRatio?: "9:16" | "16:9" | "1:1"
-  title?: string
-  voiceId?: string
-  audioBase64?: string
+  resolution?: "360p" | "540p" | "720p" | "1080p"
 }
 
-interface VideoStatus {
-  videoId: string
-  status: "pending" | "processing" | "completed" | "failed"
-  videoUrl?: string
-  thumbnailUrl?: string
-  duration?: number
-  error?: string
+interface VideoResult {
+  videoUrl: string
+  requestId: string
 }
 
-function getApiKey(): string {
-  const apiKey = process.env.HEYGEN_API_KEY
-  if (!apiKey) throw new Error("HEYGEN_API_KEY is not set")
-  return apiKey
-}
+export async function createAvatarVideo(options: CreateVideoOptions): Promise<VideoResult> {
+  ensureFalConfig()
 
-export async function createAvatarVideo(options: CreateVideoOptions): Promise<{ videoId: string }> {
-  const apiKey = getApiKey()
-  const { avatarId, scenes, aspectRatio = "9:16", title } = options
-
-  // Build HeyGen video generation request
-  // Using the "talking photo" or "avatar" approach with audio input
-  const videoInputs = scenes.map((scene) => {
-    const input: Record<string, unknown> = {
-      character: {
-        type: "avatar",
-        avatar_id: avatarId,
-        avatar_style: "normal",
-      },
-      voice: {
-        type: "audio",
-        audio_url: scene.audioUrl,
-      },
-    }
-
-    if (scene.backgroundImageUrl) {
-      input.background = {
-        type: "image",
-        url: scene.backgroundImageUrl,
-      }
-    }
-
-    return input
-  })
-
-  const response = await fetch(`${HEYGEN_BASE_URL}/video/generate`, {
-    method: "POST",
-    headers: {
-      "X-Api-Key": apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      title: title || "Postable Video",
-      aspect_ratio: aspectRatio,
-      video_inputs: videoInputs,
-    }),
-  })
-
-  if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`HeyGen create video failed (${response.status}): ${error}`)
+  const input: Record<string, unknown> = {
+    image_url: options.imageUrl,
+    audio_url: options.audioUrl,
+    talking_style: options.talkingStyle || "expressive",
+    aspect_ratio: options.aspectRatio || "9:16",
+    resolution: options.resolution || "1080p",
   }
 
-  const data = await response.json()
-  return { videoId: data.data?.video_id || data.video_id }
-}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await (fal as any).subscribe("fal-ai/heygen/avatar4/image-to-video", {
+    input,
+  })
 
-export async function getVideoStatus(videoId: string): Promise<VideoStatus> {
-  const apiKey = getApiKey()
-
-  const response = await fetch(
-    `${HEYGEN_BASE_URL}/video_status.get?video_id=${videoId}`,
-    {
-      headers: { "X-Api-Key": apiKey },
-    }
-  )
-
-  if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`HeyGen status check failed (${response.status}): ${error}`)
-  }
-
-  const data = await response.json()
-  const d = data.data || data
+  const data = result.data as { video?: { url: string }; video_url?: string }
 
   return {
-    videoId,
-    status: d.status,
-    videoUrl: d.video_url,
-    thumbnailUrl: d.thumbnail_url,
-    duration: d.duration,
-    error: d.error,
+    videoUrl: data.video?.url || data.video_url || "",
+    requestId: result.requestId || "",
   }
 }
 
-export async function pollVideoUntilReady(
-  videoId: string,
-  maxWaitMs: number = 600000,
-  intervalMs: number = 10000
-): Promise<VideoStatus> {
-  const start = Date.now()
+// ── Video Translation (HeyGen via fal.ai) ──
 
-  while (Date.now() - start < maxWaitMs) {
-    const status = await getVideoStatus(videoId)
-
-    if (status.status === "completed") return status
-    if (status.status === "failed") throw new Error(`HeyGen video failed: ${status.error}`)
-
-    await new Promise((resolve) => setTimeout(resolve, intervalMs))
-  }
-
-  throw new Error(`HeyGen video timed out after ${maxWaitMs / 1000}s`)
+interface TranslateVideoOptions {
+  videoUrl: string
+  targetLanguage: string // e.g. "tr", "en", "es"
 }
 
-export async function listAvatars(): Promise<{ avatars: { avatar_id: string; avatar_name: string; preview_image_url: string }[] }> {
-  const apiKey = getApiKey()
+export async function translateVideo(options: TranslateVideoOptions): Promise<VideoResult> {
+  ensureFalConfig()
 
-  const response = await fetch(`${HEYGEN_BASE_URL}/avatars`, {
-    headers: { "X-Api-Key": apiKey },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await (fal as any).subscribe("fal-ai/heygen/translate/video", {
+    input: {
+      video_url: options.videoUrl,
+      target_language: options.targetLanguage,
+    },
   })
 
-  if (!response.ok) {
-    throw new Error(`HeyGen list avatars failed (${response.status})`)
-  }
+  const data = result.data as { video?: { url: string }; video_url?: string }
 
-  const data = await response.json()
-  return { avatars: data.data?.avatars || [] }
+  return {
+    videoUrl: data.video?.url || data.video_url || "",
+    requestId: result.requestId || "",
+  }
 }

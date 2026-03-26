@@ -1,17 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { IMAGE_PROMPT_AGENT } from "@/lib/agents/content"
+import { generateImage } from "@/lib/services/imageGen"
 
 const client = new Anthropic()
 
 export async function POST(req: Request) {
   try {
-    const { scenes, brandGuide, style, provider } = await req.json()
+    const { scenes, brandGuide, style, model } = await req.json()
 
     if (!scenes || !Array.isArray(scenes) || scenes.length === 0) {
       return Response.json({ error: "scenes array is required" }, { status: 400 })
     }
-
-    const imageProvider = provider || "openai" // "openai" (DALL-E) or "stability"
 
     const images = []
 
@@ -40,48 +39,28 @@ ${style ? `Style preference: ${style}` : ""}`,
         promptData = { prompt: scene.visualDescription, negativePrompt: "", style: "photo" }
       }
 
-      // Step 2: Generate image via DALL-E 3
-      if (imageProvider === "openai") {
-        const openaiKey = process.env.OPENAI_API_KEY
-        if (!openaiKey) {
-          return Response.json({ error: "OPENAI_API_KEY is not set" }, { status: 500 })
-        }
-
-        const dalleRes = await fetch("https://api.openai.com/v1/images/generations", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openaiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: `${promptData.prompt}. Style: ${promptData.style || "modern professional"}. Portrait orientation 9:16. Clean background suitable for video overlay. ${promptData.negativePrompt ? `Avoid: ${promptData.negativePrompt}` : ""}`,
-            n: 1,
-            size: "1024x1792",
-            response_format: "b64_json",
-          }),
+      // Step 2: Generate image via Nano Banana Pro (fal.ai)
+      try {
+        const result = await generateImage({
+          prompt: `${promptData.prompt}. Style: ${promptData.style || "modern professional"}. Clean background suitable for avatar video overlay.`,
+          negativePrompt: promptData.negativePrompt,
+          imageSize: "portrait_16_9",
+          model: model || "nano-banana-pro",
         })
-
-        if (!dalleRes.ok) {
-          const err = await dalleRes.text()
-          console.error(`DALL-E error for scene ${scene.sceneNumber}:`, err)
-          images.push({
-            sceneNumber: scene.sceneNumber,
-            error: `Image generation failed: ${err}`,
-            prompt: promptData.prompt,
-          })
-          continue
-        }
-
-        const dalleData = await dalleRes.json()
-        const imageBase64 = dalleData.data?.[0]?.b64_json
 
         images.push({
           sceneNumber: scene.sceneNumber,
-          imageBase64,
-          format: "png",
+          imageUrl: result[0]?.imageUrl,
+          width: result[0]?.width,
+          height: result[0]?.height,
           prompt: promptData.prompt,
-          revisedPrompt: dalleData.data?.[0]?.revised_prompt,
+        })
+      } catch (e) {
+        console.error(`Image generation failed for scene ${scene.sceneNumber}:`, e)
+        images.push({
+          sceneNumber: scene.sceneNumber,
+          error: `Image generation failed: ${e instanceof Error ? e.message : String(e)}`,
+          prompt: promptData.prompt,
         })
       }
     }
