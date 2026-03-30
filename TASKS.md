@@ -25,6 +25,8 @@
 
 ## In Review
 
+- **#27 Webpage tab — Website tasarım agent'ı** — Studio ve Brand yanına "Webpage" tab'ı eklendi. Studio'nun exact copy'si ama websitesi tasarımı için. Brand page'den marka bilgilerini alıyor, chat ile iterate edilebiliyor (Lovable gibi). Yeni API route'ları: `/api/webpage-generate` (strateji + tasarımcı agent), `/api/webpage-edit` (düzenleme + safeguard). Preview 1440px genişlikte, scroll edilebilir, modern dark tema websiteleri üretiyor. Files: `app/webpage/page.tsx`, `app/api/webpage-generate/route.ts`, `app/api/webpage-edit/route.ts`, `app/page.tsx` (navbar), `app/brand/page.tsx` (navbar).
+
 - **#26 Fix: Google login stuck on "Yönlendiriliyor..." for new users** — Google OAuth button gets stuck in loading state, never redirects to Google. Root cause: `signInWithOAuth` result was not explicitly handled — code only checked for `error` but didn't use `data.url` for manual redirect. Also no timeout fallback if redirect silently fails. Fix: (1) Explicit `window.location.href = data.url` redirect as fallback, (2) 8-second safety timeout resets button if redirect never fires, (3) try/catch for unhandled exceptions, (4) Better error logging in callback route for debugging new user issues. **NOTE for Cemre:** Check Supabase Dashboard → Authentication → URL Configuration → Redirect URLs — make sure `https://app.postable.to/auth/callback` is listed (currently only `portal.whattalk.ai` shows in logs). Files: `app/login/page.tsx`, `app/auth/callback/route.ts`.
 
 

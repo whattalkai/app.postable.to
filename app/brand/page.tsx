@@ -270,6 +270,10 @@ export default function BrandPage() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Brand
           </a>
+          <a href="/webpage" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", background: "transparent", color: "#6b6b6b", transition: "all 0.15s" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><line x1="2" y1="8" x2="22" y2="8" stroke="currentColor" strokeWidth="1.5"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor"/><circle cx="8.5" cy="5.5" r="1" fill="currentColor"/><circle cx="11.5" cy="5.5" r="1" fill="currentColor"/></svg>
+            Webpage
+          </a>
         </div>
 
         <div style={{ flex: 1 }}/>
